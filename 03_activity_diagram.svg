@@ -1,0 +1,142 @@
+<svg width="880" height="980" viewBox="0 0 880 980" xmlns="http://www.w3.org/2000/svg" font-family="Arial, sans-serif">
+  <title>PulseCredit Activity Diagram</title>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M1 2L9 5L1 8" fill="none" stroke="#444" stroke-width="1.3"/>
+    </marker>
+  </defs>
+
+  <rect width="880" height="980" fill="#fafafa" rx="12"/>
+  <text x="440" y="34" text-anchor="middle" font-size="18" font-weight="bold" fill="#1a1a1a">PulseCredit — Activity Diagram</text>
+
+  <!-- SWIMLANE headers -->
+  <rect x="20" y="50" width="200" height="900" rx="6" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1" opacity="0.4"/>
+  <text x="120" y="74" text-anchor="middle" font-size="13" font-weight="bold" fill="#085041">User</text>
+
+  <rect x="228" y="50" width="210" height="900" rx="6" fill="#EEEDFE" stroke="#7F77DD" stroke-width="1" opacity="0.4"/>
+  <text x="333" y="74" text-anchor="middle" font-size="13" font-weight="bold" fill="#26215C">FastAPI Backend</text>
+
+  <rect x="446" y="50" width="200" height="900" rx="6" fill="#FAEEDA" stroke="#BA7517" stroke-width="1" opacity="0.4"/>
+  <text x="546" y="74" text-anchor="middle" font-size="13" font-weight="bold" fill="#412402">ML Engine</text>
+
+  <rect x="654" y="50" width="200" height="900" rx="6" fill="#FAECE7" stroke="#D85A30" stroke-width="1" opacity="0.4"/>
+  <text x="754" y="74" text-anchor="middle" font-size="13" font-weight="bold" fill="#4A1B0C">Gemini Flash</text>
+
+  <!-- START -->
+  <circle cx="120" cy="115" r="14" fill="#1a1a1a"/>
+  <line x1="120" y1="129" x2="120" y2="155" stroke="#444" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- A1: Choose input -->
+  <rect x="42" y="155" width="156" height="40" rx="20" fill="white" stroke="#1D9E75" stroke-width="1.5"/>
+  <text x="120" y="170" text-anchor="middle" font-size="11" fill="#085041">Choose input method</text>
+  <text x="120" y="184" text-anchor="middle" font-size="10" fill="#085041">(PDF / CSV / Demo persona)</text>
+
+  <!-- Decision: input type -->
+  <line x1="120" y1="195" x2="120" y2="225" stroke="#444" stroke-width="1.5" marker-end="url(#arr)"/>
+  <polygon points="120,225 150,250 120,275 90,250" fill="white" stroke="#444" stroke-width="1.5"/>
+  <text x="120" y="254" text-anchor="middle" font-size="10" fill="#333">Input?</text>
+
+  <!-- Branch: Demo -->
+  <line x1="90" y1="250" x2="42" y2="250" stroke="#444" stroke-width="1.2"/>
+  <line x1="42" y1="250" x2="42" y2="320" stroke="#444" stroke-width="1.2" marker-end="url(#arr)"/>
+  <text x="55" y="245" font-size="10" fill="#888">Demo</text>
+  <rect x="20" y="320" width="100" height="34" rx="17" fill="white" stroke="#1D9E75" stroke-width="1.5"/>
+  <text x="70" y="341" text-anchor="middle" font-size="10" fill="#085041">Load persona data</text>
+
+  <!-- Branch: File -->
+  <line x1="150" y1="250" x2="200" y2="250" stroke="#444" stroke-width="1.2"/>
+  <line x1="200" y1="250" x2="200" y2="310" stroke="#444" stroke-width="1.2" marker-end="url(#arr)"/>
+  <text x="168" y="244" font-size="10" fill="#888">File</text>
+  <rect x="140" y="310" width="120" height="34" rx="17" fill="white" stroke="#1D9E75" stroke-width="1.5"/>
+  <text x="200" y="331" text-anchor="middle" font-size="11" fill="#085041">Upload PDF / CSV</text>
+
+  <!-- Merge to POST parse -->
+  <line x1="70" y1="354" x2="70" y2="380" stroke="#444" stroke-width="1.2"/>
+  <line x1="70" y1="380" x2="333" y2="380" stroke="#444" stroke-width="1.2"/>
+  <line x1="200" y1="344" x2="200" y2="380" stroke="#444" stroke-width="1.2"/>
+  <line x1="333" y1="380" x2="333" y2="400" stroke="#444" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- B1: POST /api/parse -->
+  <rect x="248" y="400" width="170" height="40" rx="20" fill="white" stroke="#7F77DD" stroke-width="1.5"/>
+  <text x="333" y="415" text-anchor="middle" font-size="11" fill="#26215C">POST /api/parse</text>
+  <text x="333" y="430" text-anchor="middle" font-size="10" fill="#534AB7">pdfplumber extract text</text>
+  <line x1="333" y1="440" x2="333" y2="465" stroke="#444" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Decision: valid? -->
+  <polygon points="333,465 365,490 333,515 301,490" fill="white" stroke="#444" stroke-width="1.5"/>
+  <text x="333" y="493" text-anchor="middle" font-size="10" fill="#333">Valid?</text>
+  <text x="368" y="488" font-size="10" fill="#888">No</text>
+
+  <!-- No branch: error -->
+  <line x1="365" y1="490" x2="440" y2="490" stroke="#E24B4A" stroke-width="1.2"/>
+  <rect x="440" y="476" width="120" height="28" rx="14" fill="#FCEBEB" stroke="#E24B4A" stroke-width="1.2"/>
+  <text x="500" y="494" text-anchor="middle" font-size="10" fill="#A32D2D">Return parse error</text>
+  <text x="295" y="520" font-size="10" fill="#888">Yes</text>
+
+  <line x1="333" y1="515" x2="333" y2="545" stroke="#444" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- B2: Detect bank format -->
+  <rect x="248" y="545" width="170" height="34" rx="17" fill="white" stroke="#7F77DD" stroke-width="1.5"/>
+  <text x="333" y="566" text-anchor="middle" font-size="11" fill="#26215C">Detect bank format</text>
+  <line x1="333" y1="579" x2="333" y2="604" stroke="#444" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- B3: Normalize transactions -->
+  <rect x="248" y="604" width="170" height="34" rx="17" fill="white" stroke="#7F77DD" stroke-width="1.5"/>
+  <text x="333" y="625" text-anchor="middle" font-size="11" fill="#26215C">Normalize transactions</text>
+  <line x1="333" y1="638" x2="333" y2="663" stroke="#444" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- POST /api/score trigger -->
+  <rect x="248" y="663" width="170" height="34" rx="17" fill="white" stroke="#7F77DD" stroke-width="1.5"/>
+  <text x="333" y="684" text-anchor="middle" font-size="11" fill="#26215C">POST /api/score</text>
+
+  <!-- Parallel fork -->
+  <line x1="333" y1="697" x2="333" y2="717" stroke="#444" stroke-width="1.5" marker-end="url(#arr)"/>
+  <rect x="248" y="717" width="380" height="6" rx="3" fill="#444"/>
+
+  <!-- ML parallel: XGBoost -->
+  <line x1="370" y1="723" x2="370" y2="748" stroke="#444" stroke-width="1.2" marker-end="url(#arr)"/>
+  <rect x="290" y="748" width="160" height="34" rx="17" fill="white" stroke="#BA7517" stroke-width="1.5"/>
+  <text x="370" y="769" text-anchor="middle" font-size="11" fill="#412402">XGBoost scoring</text>
+
+  <!-- ML parallel: Autoencoder -->
+  <line x1="550" y1="723" x2="550" y2="748" stroke="#444" stroke-width="1.2" marker-end="url(#arr)"/>
+  <rect x="470" y="748" width="160" height="34" rx="17" fill="white" stroke="#D85A30" stroke-width="1.5"/>
+  <text x="550" y="763" text-anchor="middle" font-size="10" fill="#4A1B0C">Autoencoder</text>
+  <text x="550" y="776" text-anchor="middle" font-size="10" fill="#4A1B0C">reconstruction error</text>
+
+  <!-- Join fork -->
+  <line x1="370" y1="782" x2="370" y2="814" stroke="#444" stroke-width="1.2"/>
+  <line x1="550" y1="782" x2="550" y2="814" stroke="#444" stroke-width="1.2"/>
+  <rect x="290" y="814" width="320" height="6" rx="3" fill="#444"/>
+  <line x1="450" y1="820" x2="450" y2="845" stroke="#444" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Ensemble + SHAP -->
+  <rect x="367" y="845" width="166" height="34" rx="17" fill="white" stroke="#BA7517" stroke-width="1.5"/>
+  <text x="450" y="860" text-anchor="middle" font-size="11" fill="#412402">Ensemble blend + SHAP</text>
+  <text x="450" y="874" text-anchor="middle" font-size="10" fill="#412402">→ pulse_score 300-850</text>
+  <line x1="450" y1="879" x2="450" y2="904" stroke="#444" stroke-width="1.5"/>
+  <line x1="450" y1="904" x2="700" y2="904" stroke="#444" stroke-width="1.2"/>
+  <line x1="700" y1="904" x2="700" y2="880" stroke="#444" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Gemini calls (parallel) -->
+  <rect x="248" y="717" width="0" height="0"/>
+  <rect x="620" y="848" width="180" height="34" rx="17" fill="white" stroke="#D85A30" stroke-width="1.5"/>
+  <text x="710" y="863" text-anchor="middle" font-size="11" fill="#4A1B0C">Gemini: explanation</text>
+  <text x="710" y="876" text-anchor="middle" font-size="10" fill="#4A1B0C">+ action roadmap</text>
+
+  <!-- Score to user -->
+  <line x1="450" y1="879" x2="333" y2="879" stroke="#444" stroke-width="1.2"/>
+  <line x1="333" y1="879" x2="333" y2="904" stroke="#444" stroke-width="1.5" marker-end="url(#arr)"/>
+  <rect x="248" y="904" width="170" height="34" rx="17" fill="white" stroke="#7F77DD" stroke-width="1.5"/>
+  <text x="333" y="924" text-anchor="middle" font-size="11" fill="#26215C">Return score JSON</text>
+
+  <!-- User sees dashboard -->
+  <line x1="248" y1="921" x2="196" y2="921" stroke="#444" stroke-width="1.2" marker-end="url(#arr)"/>
+  <rect x="40" y="907" width="156" height="34" rx="17" fill="white" stroke="#1D9E75" stroke-width="1.5"/>
+  <text x="118" y="928" text-anchor="middle" font-size="11" fill="#085041">View score dashboard</text>
+
+  <!-- END -->
+  <line x1="118" y1="941" x2="118" y2="960" stroke="#444" stroke-width="1.5" marker-end="url(#arr)"/>
+  <circle cx="118" cy="966" r="10" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+  <circle cx="118" cy="966" r="6" fill="#1a1a1a"/>
+</svg>

@@ -1,0 +1,133 @@
+<svg width="900" height="680" viewBox="0 0 900 680" xmlns="http://www.w3.org/2000/svg" font-family="Arial, sans-serif">
+  <title>PulseCredit Use Case Diagram</title>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M1 1L9 5L1 9" fill="none" stroke="#555" stroke-width="1.2"/>
+    </marker>
+    <marker id="arr-dash" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M1 1L9 5L1 9" fill="none" stroke="#888" stroke-width="1.2"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="680" fill="#fafafa" rx="12"/>
+  <text x="450" y="36" text-anchor="middle" font-size="18" font-weight="bold" fill="#1a1a1a">PulseCredit — Use Case Diagram</text>
+
+  <!-- System boundary -->
+  <rect x="220" y="60" width="500" height="580" rx="14" fill="none" stroke="#378ADD" stroke-width="1.5" stroke-dasharray="8,4"/>
+  <text x="470" y="84" text-anchor="middle" font-size="13" font-weight="bold" fill="#185FA5">PulseCredit System</text>
+
+  <!-- ACTOR: Student/Gig Worker -->
+  <g transform="translate(60,180)">
+    <circle cx="0" cy="0" r="18" fill="none" stroke="#1D9E75" stroke-width="2"/>
+    <line x1="0" y1="18" x2="0" y2="56" stroke="#1D9E75" stroke-width="2"/>
+    <line x1="-24" y1="34" x2="24" y2="34" stroke="#1D9E75" stroke-width="2"/>
+    <line x1="0" y1="56" x2="-18" y2="80" stroke="#1D9E75" stroke-width="2"/>
+    <line x1="0" y1="56" x2="18" y2="80" stroke="#1D9E75" stroke-width="2"/>
+    <text x="0" y="100" text-anchor="middle" font-size="12" font-weight="bold" fill="#0F6E56">Student /</text>
+    <text x="0" y="116" text-anchor="middle" font-size="12" font-weight="bold" fill="#0F6E56">Gig Worker</text>
+  </g>
+
+  <!-- ACTOR: NBFC / Lender -->
+  <g transform="translate(820,280)">
+    <circle cx="0" cy="0" r="18" fill="none" stroke="#7F77DD" stroke-width="2"/>
+    <line x1="0" y1="18" x2="0" y2="56" stroke="#7F77DD" stroke-width="2"/>
+    <line x1="-24" y1="34" x2="24" y2="34" stroke="#7F77DD" stroke-width="2"/>
+    <line x1="0" y1="56" x2="-18" y2="80" stroke="#7F77DD" stroke-width="2"/>
+    <line x1="0" y1="56" x2="18" y2="80" stroke="#7F77DD" stroke-width="2"/>
+    <text x="0" y="100" text-anchor="middle" font-size="12" font-weight="bold" fill="#534AB7">NBFC /</text>
+    <text x="0" y="116" text-anchor="middle" font-size="12" font-weight="bold" fill="#534AB7">Lender</text>
+  </g>
+
+  <!-- ACTOR: Gemini (external) -->
+  <g transform="translate(820,500)">
+    <circle cx="0" cy="0" r="18" fill="none" stroke="#BA7517" stroke-width="2"/>
+    <line x1="0" y1="18" x2="0" y2="56" stroke="#BA7517" stroke-width="2"/>
+    <line x1="-24" y1="34" x2="24" y2="34" stroke="#BA7517" stroke-width="2"/>
+    <line x1="0" y1="56" x2="-18" y2="80" stroke="#BA7517" stroke-width="2"/>
+    <line x1="0" y1="56" x2="18" y2="80" stroke="#BA7517" stroke-width="2"/>
+    <text x="0" y="100" text-anchor="middle" font-size="12" font-weight="bold" fill="#854F0B">Gemini</text>
+    <text x="0" y="116" text-anchor="middle" font-size="12" font-weight="bold" fill="#854F0B">Flash API</text>
+  </g>
+
+  <!-- USE CASES: ellipses -->
+  <!-- UC1: Upload UPI Statement -->
+  <ellipse cx="400" cy="140" rx="110" ry="28" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.5"/>
+  <text x="400" y="144" text-anchor="middle" font-size="12" fill="#085041">Upload UPI Statement</text>
+
+  <!-- UC2: Load Demo Persona -->
+  <ellipse cx="400" cy="215" rx="110" ry="28" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.5"/>
+  <text x="400" y="219" text-anchor="middle" font-size="12" fill="#085041">Load Demo Persona</text>
+
+  <!-- UC3: View Credit Score -->
+  <ellipse cx="400" cy="295" rx="110" ry="28" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.5"/>
+  <text x="400" y="299" text-anchor="middle" font-size="12" fill="#085041">View Credit Score</text>
+
+  <!-- UC4: Explore Radar Chart -->
+  <ellipse cx="400" cy="370" rx="110" ry="28" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.5"/>
+  <text x="400" y="374" text-anchor="middle" font-size="12" fill="#085041">Explore Radar Chart</text>
+
+  <!-- UC5: Run What-If Simulation -->
+  <ellipse cx="400" cy="445" rx="115" ry="28" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.5"/>
+  <text x="400" y="449" text-anchor="middle" font-size="12" fill="#085041">Run What-If Simulation</text>
+
+  <!-- UC6: View Social Graph -->
+  <ellipse cx="400" cy="520" rx="110" ry="28" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.5"/>
+  <text x="400" y="524" text-anchor="middle" font-size="12" fill="#085041">View Social Trust Graph</text>
+
+  <!-- UC7: Download Lender Report -->
+  <ellipse cx="400" cy="595" rx="115" ry="28" fill="#EEEDFE" stroke="#7F77DD" stroke-width="1.5"/>
+  <text x="400" y="599" text-anchor="middle" font-size="12" fill="#26215C">Download Lender Report</text>
+
+  <!-- UC8: Generate Explanation (system internal) -->
+  <ellipse cx="590" cy="295" rx="105" ry="28" fill="#FAEEDA" stroke="#BA7517" stroke-width="1.5"/>
+  <text x="590" y="291" text-anchor="middle" font-size="11" fill="#412402">Generate Plain-English</text>
+  <text x="590" y="305" text-anchor="middle" font-size="11" fill="#412402">Explanation</text>
+
+  <!-- UC9: Generate Action Roadmap -->
+  <ellipse cx="590" cy="380" rx="105" ry="28" fill="#FAEEDA" stroke="#BA7517" stroke-width="1.5"/>
+  <text x="590" y="376" text-anchor="middle" font-size="11" fill="#412402">Generate Action</text>
+  <text x="590" y="390" text-anchor="middle" font-size="11" fill="#412402">Roadmap</text>
+
+  <!-- UC10: Generate Lender Memo -->
+  <ellipse cx="590" cy="465" rx="105" ry="28" fill="#FAEEDA" stroke="#BA7517" stroke-width="1.5"/>
+  <text x="590" y="461" text-anchor="middle" font-size="11" fill="#412402">Generate Lender</text>
+  <text x="590" y="475" text-anchor="middle" font-size="11" fill="#412402">Credit Memo</text>
+
+  <!-- ASSOCIATIONS: Student to UCs -->
+  <line x1="96" y1="220" x2="288" y2="165" stroke="#1D9E75" stroke-width="1.2" marker-end="url(#arr)"/>
+  <line x1="96" y1="240" x2="288" y2="228" stroke="#1D9E75" stroke-width="1.2" marker-end="url(#arr)"/>
+  <line x1="96" y1="250" x2="288" y2="295" stroke="#1D9E75" stroke-width="1.2" marker-end="url(#arr)"/>
+  <line x1="96" y1="255" x2="288" y2="370" stroke="#1D9E75" stroke-width="1.2" marker-end="url(#arr)"/>
+  <line x1="96" y1="260" x2="283" y2="445" stroke="#1D9E75" stroke-width="1.2" marker-end="url(#arr)"/>
+  <line x1="96" y1="265" x2="288" y2="520" stroke="#1D9E75" stroke-width="1.2" marker-end="url(#arr)"/>
+  <line x1="96" y1="270" x2="283" y2="595" stroke="#1D9E75" stroke-width="1.2" marker-end="url(#arr)"/>
+
+  <!-- NBFC to lender report -->
+  <line x1="820" y1="348" x2="717" y2="580" stroke="#7F77DD" stroke-width="1.2" marker-end="url(#arr)"/>
+
+  <!-- include: View Score → Generate Explanation -->
+  <line x1="512" y1="295" x2="483" y2="295" stroke="#888" stroke-width="1" stroke-dasharray="5,3" marker-end="url(#arr-dash)"/>
+  <text x="547" y="289" font-size="10" fill="#888">«include»</text>
+
+  <!-- include: View Score → Generate Action Roadmap -->
+  <line x1="510" y1="305" x2="490" y2="365" stroke="#888" stroke-width="1" stroke-dasharray="5,3" marker-end="url(#arr-dash)"/>
+  <text x="545" y="340" font-size="10" fill="#888">«include»</text>
+
+  <!-- include: Download Report → Generate Lender Memo -->
+  <line x1="514" y1="595" x2="514" y2="495" stroke="#888" stroke-width="1" stroke-dasharray="5,3" marker-end="url(#arr-dash)"/>
+  <text x="519" y="545" font-size="10" fill="#888">«include»</text>
+
+  <!-- Gemini associations -->
+  <line x1="695" y1="295" x2="788" y2="490" stroke="#BA7517" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arr-dash)"/>
+  <line x1="695" y1="380" x2="790" y2="500" stroke="#BA7517" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arr-dash)"/>
+  <line x1="695" y1="465" x2="790" y2="515" stroke="#BA7517" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arr-dash)"/>
+
+  <!-- Legend -->
+  <rect x="230" y="640" width="12" height="12" rx="2" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.2"/>
+  <text x="248" y="651" font-size="11" fill="#444">User-initiated use case</text>
+  <rect x="380" y="640" width="12" height="12" rx="2" fill="#FAEEDA" stroke="#BA7517" stroke-width="1.2"/>
+  <text x="398" y="651" font-size="11" fill="#444">System-internal (Gemini)</text>
+  <rect x="540" y="640" width="12" height="12" rx="2" fill="#EEEDFE" stroke="#7F77DD" stroke-width="1.2"/>
+  <text x="558" y="651" font-size="11" fill="#444">Lender-facing use case</text>
+</svg>

@@ -1,0 +1,234 @@
+<svg width="1100" height="820" viewBox="0 0 1100 820" xmlns="http://www.w3.org/2000/svg" font-family="Arial, sans-serif">
+  <title>PulseCredit Class Diagram</title>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M1 2L9 5L1 8" fill="none" stroke="#555" stroke-width="1.3"/>
+    </marker>
+    <marker id="comp" viewBox="0 0 14 14" refX="0" refY="7" markerWidth="10" markerHeight="10" orient="auto">
+      <polygon points="0,7 7,2 14,7 7,12" fill="#555"/>
+    </marker>
+    <marker id="agg" viewBox="0 0 14 14" refX="0" refY="7" markerWidth="10" markerHeight="10" orient="auto">
+      <polygon points="0,7 7,2 14,7 7,12" fill="white" stroke="#555" stroke-width="1"/>
+    </marker>
+  </defs>
+
+  <rect width="1100" height="820" fill="#fafafa" rx="12"/>
+  <text x="550" y="36" text-anchor="middle" font-size="18" font-weight="bold" fill="#1a1a1a">PulseCredit — Class Diagram</text>
+
+  <!-- CLASS: Transaction -->
+  <g transform="translate(30,60)">
+    <rect width="190" height="198" rx="6" fill="white" stroke="#1D9E75" stroke-width="1.5"/>
+    <rect width="190" height="32" rx="6" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.5"/>
+    <rect y="32" width="190" height="1" fill="#1D9E75"/>
+    <text x="95" y="22" text-anchor="middle" font-size="13" font-weight="bold" fill="#085041">Transaction</text>
+    <!-- attrs -->
+    <text x="10" y="56" font-size="11" fill="#333">- id: UUID</text>
+    <text x="10" y="72" font-size="11" fill="#333">- profile_id: UUID</text>
+    <text x="10" y="88" font-size="11" fill="#333">- txn_date: Date</text>
+    <text x="10" y="104" font-size="11" fill="#333">- amount: float</text>
+    <text x="10" y="120" font-size="11" fill="#333">- direction: CR | DR</text>
+    <text x="10" y="136" font-size="11" fill="#333">- vpa: str</text>
+    <text x="10" y="152" font-size="11" fill="#333">- merchant_name: str</text>
+    <text x="10" y="168" font-size="11" fill="#333">- category: str</text>
+    <text x="10" y="184" font-size="11" fill="#333">- remarks: str</text>
+    <line x1="0" y1="190" x2="190" y2="190" stroke="#1D9E75" stroke-width="0.8"/>
+    <text x="10" y="205" font-size="11" fill="#555">+ is_festival_tagged(): bool</text>
+  </g>
+
+  <!-- CLASS: Profile -->
+  <g transform="translate(270,60)">
+    <rect width="190" height="178" rx="6" fill="white" stroke="#1D9E75" stroke-width="1.5"/>
+    <rect width="190" height="32" rx="6" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.5"/>
+    <text x="95" y="22" text-anchor="middle" font-size="13" font-weight="bold" fill="#085041">Profile</text>
+    <text x="10" y="56" font-size="11" fill="#333">- id: UUID</text>
+    <text x="10" y="72" font-size="11" fill="#333">- archetype: ArchetypeEnum</text>
+    <text x="10" y="88" font-size="11" fill="#333">- created_at: datetime</text>
+    <text x="10" y="104" font-size="11" fill="#333">- is_demo: bool</text>
+    <line x1="0" y1="114" x2="190" y2="114" stroke="#1D9E75" stroke-width="0.8"/>
+    <text x="10" y="130" font-size="11" fill="#555">+ get_transactions(): List</text>
+    <text x="10" y="146" font-size="11" fill="#555">+ get_latest_score(): Score</text>
+    <text x="10" y="162" font-size="11" fill="#555">+ get_feature_vector(): FV</text>
+    <!-- enum box -->
+    <rect x="0" y="172" width="190" height="32" rx="0" fill="#EAF3DE" stroke="#1D9E75" stroke-width="0.8"/>
+    <text x="95" y="183" text-anchor="middle" font-size="10" fill="#3B6D11">«enum» ArchetypeEnum</text>
+    <text x="95" y="196" text-anchor="middle" font-size="10" fill="#3B6D11">student | gig_worker | salaried | irregular</text>
+  </g>
+
+  <!-- CLASS: FeatureVector -->
+  <g transform="translate(510,60)">
+    <rect width="200" height="230" rx="6" fill="white" stroke="#7F77DD" stroke-width="1.5"/>
+    <rect width="200" height="32" rx="6" fill="#EEEDFE" stroke="#7F77DD" stroke-width="1.5"/>
+    <text x="100" y="22" text-anchor="middle" font-size="13" font-weight="bold" fill="#26215C">FeatureVector</text>
+    <text x="10" y="56" font-size="11" fill="#333">- id: UUID</text>
+    <text x="10" y="72" font-size="11" fill="#333">- profile_id: UUID</text>
+    <text x="10" y="88" font-size="11" fill="#333">- computed_at: datetime</text>
+    <text x="10" y="104" font-size="11" fill="#333">- rhythm_score: float</text>
+    <text x="10" y="120" font-size="11" fill="#333">- merchant_score: float</text>
+    <text x="10" y="136" font-size="11" fill="#333">- social_score: float</text>
+    <text x="10" y="152" font-size="11" fill="#333">- calendar_score: float</text>
+    <text x="10" y="168" font-size="11" fill="#333">- velocity_score: float</text>
+    <text x="10" y="184" font-size="11" fill="#333">- nlp_score: float</text>
+    <text x="10" y="200" font-size="11" fill="#333">- raw_features: dict[24]</text>
+    <line x1="0" y1="210" x2="200" y2="210" stroke="#7F77DD" stroke-width="0.8"/>
+    <text x="10" y="226" font-size="11" fill="#555">+ to_array(): np.ndarray</text>
+  </g>
+
+  <!-- CLASS: Score -->
+  <g transform="translate(760,60)">
+    <rect width="210" height="266" rx="6" fill="white" stroke="#BA7517" stroke-width="1.5"/>
+    <rect width="210" height="32" rx="6" fill="#FAEEDA" stroke="#BA7517" stroke-width="1.5"/>
+    <text x="105" y="22" text-anchor="middle" font-size="13" font-weight="bold" fill="#412402">Score</text>
+    <text x="10" y="56" font-size="11" fill="#333">- id: UUID</text>
+    <text x="10" y="72" font-size="11" fill="#333">- profile_id: UUID</text>
+    <text x="10" y="88" font-size="11" fill="#333">- scored_at: datetime</text>
+    <text x="10" y="104" font-size="11" fill="#333">- pulse_score: int [300-850]</text>
+    <text x="10" y="120" font-size="11" fill="#333">- confidence_low: int</text>
+    <text x="10" y="136" font-size="11" fill="#333">- confidence_high: int</text>
+    <text x="10" y="152" font-size="11" fill="#333">- xgb_score: float</text>
+    <text x="10" y="168" font-size="11" fill="#333">- ae_recon_error: float</text>
+    <text x="10" y="184" font-size="11" fill="#333">- shap_values: dict</text>
+    <text x="10" y="200" font-size="11" fill="#333">- explanation: str</text>
+    <text x="10" y="216" font-size="11" fill="#333">- actions: List[Action]</text>
+    <text x="10" y="232" font-size="11" fill="#333">- lender_memo: str</text>
+    <line x1="0" y1="242" x2="210" y2="242" stroke="#BA7517" stroke-width="0.8"/>
+    <text x="10" y="258" font-size="11" fill="#555">+ get_band(): str</text>
+    <text x="10" y="272" font-size="11" fill="#555">+ get_loan_estimate(): str</text>
+  </g>
+
+  <!-- CLASS: PDFParser -->
+  <g transform="translate(30,340)">
+    <rect width="190" height="152" rx="6" fill="white" stroke="#378ADD" stroke-width="1.5"/>
+    <rect width="190" height="32" rx="6" fill="#E6F1FB" stroke="#378ADD" stroke-width="1.5"/>
+    <text x="95" y="22" text-anchor="middle" font-size="13" font-weight="bold" fill="#042C53">PDFParser</text>
+    <text x="10" y="56" font-size="11" fill="#333">- bank_patterns: dict</text>
+    <text x="10" y="72" font-size="11" fill="#333">- vpa_regex: Pattern</text>
+    <line x1="0" y1="82" x2="190" y2="82" stroke="#378ADD" stroke-width="0.8"/>
+    <text x="10" y="98" font-size="11" fill="#555">+ parse(file): List[Txn]</text>
+    <text x="10" y="114" font-size="11" fill="#555">+ detect_bank(text): str</text>
+    <text x="10" y="130" font-size="11" fill="#555">+ extract_vpa(narr): str</text>
+    <text x="10" y="146" font-size="11" fill="#555">+ classify_category(vpa): str</text>
+  </g>
+
+  <!-- CLASS: FeatureEngine -->
+  <g transform="translate(270,340)">
+    <rect width="200" height="186" rx="6" fill="white" stroke="#7F77DD" stroke-width="1.5"/>
+    <rect width="200" height="32" rx="6" fill="#EEEDFE" stroke="#7F77DD" stroke-width="1.5"/>
+    <text x="100" y="22" text-anchor="middle" font-size="13" font-weight="bold" fill="#26215C">FeatureEngine</text>
+    <text x="10" y="56" font-size="11" fill="#333">- festival_dates: dict</text>
+    <text x="10" y="72" font-size="11" fill="#333">- keyword_lists: dict</text>
+    <line x1="0" y1="82" x2="200" y2="82" stroke="#7F77DD" stroke-width="0.8"/>
+    <text x="10" y="98" font-size="11" fill="#555">+ compute_all(txns): FV</text>
+    <text x="10" y="114" font-size="11" fill="#555">+ compute_rhythm(txns): dict</text>
+    <text x="10" y="130" font-size="11" fill="#555">+ compute_merchant(txns): dict</text>
+    <text x="10" y="146" font-size="11" fill="#555">+ compute_social(txns): dict</text>
+    <text x="10" y="162" font-size="11" fill="#555">+ compute_calendar(txns): dict</text>
+    <text x="10" y="178" font-size="11" fill="#555">+ compute_nlp(txns): dict</text>
+  </g>
+
+  <!-- CLASS: EnsembleScorer -->
+  <g transform="translate(520,340)">
+    <rect width="200" height="200" rx="6" fill="white" stroke="#BA7517" stroke-width="1.5"/>
+    <rect width="200" height="32" rx="6" fill="#FAEEDA" stroke="#BA7517" stroke-width="1.5"/>
+    <text x="100" y="22" text-anchor="middle" font-size="13" font-weight="bold" fill="#412402">EnsembleScorer</text>
+    <text x="10" y="56" font-size="11" fill="#333">- xgb_model: XGBRegressor</text>
+    <text x="10" y="72" font-size="11" fill="#333">- autoencoder: CreditAE</text>
+    <text x="10" y="88" font-size="11" fill="#333">- ae_threshold: float</text>
+    <text x="10" y="104" font-size="11" fill="#333">- weights: dict</text>
+    <line x1="0" y1="114" x2="200" y2="114" stroke="#BA7517" stroke-width="0.8"/>
+    <text x="10" y="130" font-size="11" fill="#555">+ score(fv): Score</text>
+    <text x="10" y="146" font-size="11" fill="#555">+ simulate(fv, overrides): Score</text>
+    <text x="10" y="162" font-size="11" fill="#555">+ compute_shap(fv): dict</text>
+    <text x="10" y="178" font-size="11" fill="#555">+ calibrate(raw): int</text>
+    <text x="10" y="194" font-size="11" fill="#555">+ classify_archetype(fv): str</text>
+  </g>
+
+  <!-- CLASS: CreditAutoencoder -->
+  <g transform="translate(770,340)">
+    <rect width="200" height="168" rx="6" fill="white" stroke="#D85A30" stroke-width="1.5"/>
+    <rect width="200" height="32" rx="6" fill="#FAECE7" stroke="#D85A30" stroke-width="1.5"/>
+    <text x="100" y="22" text-anchor="middle" font-size="13" font-weight="bold" fill="#4A1B0C">CreditAutoencoder</text>
+    <text x="10" y="56" font-size="11" fill="#555">«PyTorch nn.Module»</text>
+    <text x="10" y="72" font-size="11" fill="#333">- encoder: Sequential</text>
+    <text x="10" y="88" font-size="11" fill="#333">- decoder: Sequential</text>
+    <text x="10" y="104" font-size="11" fill="#333">- dropout: float = 0.2</text>
+    <line x1="0" y1="114" x2="200" y2="114" stroke="#D85A30" stroke-width="0.8"/>
+    <text x="10" y="130" font-size="11" fill="#555">+ forward(x): Tensor</text>
+    <text x="10" y="146" font-size="11" fill="#555">+ encode(x): Tensor</text>
+    <text x="10" y="162" font-size="11" fill="#555">+ recon_error(x): float</text>
+  </g>
+
+  <!-- CLASS: GeminiClient -->
+  <g transform="translate(270,590)">
+    <rect width="210" height="168" rx="6" fill="white" stroke="#BA7517" stroke-width="1.5"/>
+    <rect width="210" height="32" rx="6" fill="#FAEEDA" stroke="#BA7517" stroke-width="1.5"/>
+    <text x="105" y="22" text-anchor="middle" font-size="13" font-weight="bold" fill="#412402">GeminiClient</text>
+    <text x="10" y="56" font-size="11" fill="#333">- api_key: str</text>
+    <text x="10" y="72" font-size="11" fill="#333">- model: str = "gemini-1.5-flash"</text>
+    <text x="10" y="88" font-size="11" fill="#333">- prompts: dict</text>
+    <line x1="0" y1="98" x2="210" y2="98" stroke="#BA7517" stroke-width="0.8"/>
+    <text x="10" y="114" font-size="11" fill="#555">+ explain(score, shap): str</text>
+    <text x="10" y="130" font-size="11" fill="#555">+ action_roadmap(score): List</text>
+    <text x="10" y="146" font-size="11" fill="#555">+ lender_memo(score): str</text>
+    <text x="10" y="162" font-size="11" fill="#555">+ classify_remarks(text): dict</text>
+  </g>
+
+  <!-- CLASS: SocialGraph -->
+  <g transform="translate(540,590)">
+    <rect width="190" height="152" rx="6" fill="white" stroke="#1D9E75" stroke-width="1.5"/>
+    <rect width="190" height="32" rx="6" fill="#E1F5EE" stroke="#1D9E75" stroke-width="1.5"/>
+    <text x="95" y="22" text-anchor="middle" font-size="13" font-weight="bold" fill="#085041">SocialGraph</text>
+    <text x="10" y="56" font-size="11" fill="#333">- G: nx.DiGraph</text>
+    <text x="10" y="72" font-size="11" fill="#333">- user_node: str = "USER"</text>
+    <line x1="0" y1="82" x2="190" y2="82" stroke="#1D9E75" stroke-width="0.8"/>
+    <text x="10" y="98" font-size="11" fill="#555">+ build(txns): SocialGraph</text>
+    <text x="10" y="114" font-size="11" fill="#555">+ unique_senders(): int</text>
+    <text x="10" y="130" font-size="11" fill="#555">+ reciprocity(): float</text>
+    <text x="10" y="146" font-size="11" fill="#555">+ to_d3_json(): dict</text>
+  </g>
+
+  <!-- RELATIONSHIPS -->
+  <!-- Profile 1..* Transaction (composition) -->
+  <line x1="270" y1="160" x2="220" y2="160" stroke="#555" stroke-width="1.3" marker-start="url(#comp)"/>
+  <text x="224" y="155" font-size="10" fill="#555">1</text>
+  <text x="252" y="155" font-size="10" fill="#555">0..*</text>
+
+  <!-- Profile 1..1 FeatureVector -->
+  <line x1="460" y1="150" x2="510" y2="150" stroke="#555" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arr)"/>
+  <text x="462" y="145" font-size="10" fill="#555">1</text>
+  <text x="494" y="145" font-size="10" fill="#555">1..*</text>
+
+  <!-- Profile 1 Score -->
+  <line x1="460" y1="170" x2="760" y2="170" stroke="#555" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arr)"/>
+  <text x="758" y="165" font-size="10" fill="#555">0..*</text>
+
+  <!-- PDFParser → Transaction (creates) -->
+  <line x1="125" y1="340" x2="125" y2="270" stroke="#378ADD" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+  <text x="130" y="310" font-size="10" fill="#378ADD">«creates»</text>
+
+  <!-- FeatureEngine → FeatureVector -->
+  <line x1="370" y1="340" x2="600" y2="295" stroke="#7F77DD" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+  <text x="440" y="320" font-size="10" fill="#7F77DD">«creates»</text>
+
+  <!-- EnsembleScorer uses CreditAutoencoder -->
+  <line x1="720" y1="430" x2="770" y2="430" stroke="#555" stroke-width="1.2" marker-end="url(#agg)"/>
+
+  <!-- EnsembleScorer → Score -->
+  <line x1="620" y1="340" x2="860" y2="330" stroke="#BA7517" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+  <text x="720" y="325" font-size="10" fill="#BA7517">«creates»</text>
+
+  <!-- EnsembleScorer uses GeminiClient -->
+  <line x1="570" y1="540" x2="430" y2="590" stroke="#555" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+  <text x="465" y="575" font-size="10" fill="#555">«uses»</text>
+
+  <!-- FeatureEngine uses SocialGraph -->
+  <line x1="370" y1="520" x2="540" y2="610" stroke="#555" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+  <text x="415" y="590" font-size="10" fill="#555">«uses»</text>
+
+  <!-- Legend -->
+  <line x1="30" y1="778" x2="55" y2="778" stroke="#555" stroke-width="1.3" marker-start="url(#comp)"/>
+  <text x="62" y="782" font-size="11" fill="#444">Composition</text>
+  <line x1="170" y1="778" x2="210" y2="778" stroke="#555" stroke-width="1.3" stroke-dasharray="5,3" marker-end="url(#arr)"/>
+  <text x="216" y="782" font-size="11" fill="#444">Dependency</text>
+  <line x1="330" y1="778" x2="365" y2="778" stroke="#555" stroke-width="1.3" marker-end="url(#agg)"/>
+  <text x="370" y="782" font-size="11" fill="#444">Aggregation</text>
+</svg>
