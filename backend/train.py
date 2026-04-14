@@ -12,6 +12,7 @@ import torch
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from pathlib import Path
+from typing import Dict
 
 from synthetic_data import generate_synthetic_dataset
 from feature_engine import FeatureEngine

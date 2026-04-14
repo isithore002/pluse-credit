@@ -8,10 +8,15 @@ __pycache__/
 .Python
 env/
 venv/
+.venv/
+.venv*/
 *.egg-info/
 dist/
 build/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
 *.pkl
 *.pt
 *.pth

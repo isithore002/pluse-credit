@@ -320,16 +320,33 @@ npm run test
 | 600-649 | Fair | ₹10,000 |
 | 300-599 | Poor | ₹5,000 (with monitoring) |
 
-## 🛡 Hallucination Guards
 
-❌ Never use: Groq, TensorFlow, Flask, MongoDB, GPT/OpenAI, blockchain
-✅ Always use: Gemini Flash 1.5, FastAPI, PyTorch, Supabase, Next.js 14 app router
+## 🧭 Diagrams
 
-## 📚 References
+### 1. Use Case Diagram
 
-- CLAUDE.md: Master technical specification
-- INSTRUCTIONS.md: Implementation details
-- Diagrams: 6 architecture diagrams (SVG) in repo root
+![Use Case Diagram](01_use_case.svg)
+
+### 2. Class Diagram
+
+![Class Diagram](02_class_diagram.svg)
+
+### 3. Activity Diagram
+
+![Activity Diagram](03_activity_diagram.svg)
+
+### 4. Sequence Diagram
+
+![Sequence Diagram](04_sequence_diagram.svg)
+
+### 5. Statechart Diagram
+
+![Statechart Diagram](05_statechart_diagram.svg)
+
+### 6. Component and Deployment Diagram
+
+![Component and Deployment Diagram](06_component_deployment.svg)
+
 
 ## 📄 License
 

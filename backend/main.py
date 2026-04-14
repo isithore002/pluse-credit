@@ -23,6 +23,9 @@ import uvicorn
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from supabase import create_client
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).parent.parent / ".env")
 
 from feature_engine import FeatureEngine
 from autoencoder import load_model as load_ae_model, get_reconstruction_error
