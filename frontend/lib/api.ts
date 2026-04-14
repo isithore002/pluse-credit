@@ -1,7 +1,7 @@
 // lib/api.ts - Axios client for FastAPI backend
 
 import axios from 'axios';
-import { ScoreResult, Transaction } from './store';
+import { DimensionScores, ScoreResult, Transaction } from './store';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -31,7 +31,13 @@ export interface PersonaData {
   city: string;
   pulse_score: number;
   band: string;
-  dimensions: Record<string, number>;
+  confidence?: [number, number] | number[];
+  dimensions: DimensionScores;
+  shap_top3?: Array<{
+    feature: string;
+    value: number;
+    impact: number;
+  }>;
 }
 
 export const apiService = {

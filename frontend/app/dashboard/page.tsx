@@ -3,6 +3,7 @@
 // frontend/app/dashboard/page.tsx - Main dashboard displaying score and results
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { usePulseCreditStore } from '@/lib/store';
 import ScoreRing from '@/components/ScoreRing';
 import RadarChart from '@/components/RadarChart';
@@ -10,6 +11,7 @@ import SHAPWaterfall from '@/components/SHAPWaterfall';
 import ActionRoadmap from '@/components/ActionRoadmap';
 
 export default function Dashboard() {
+  const router = useRouter();
   const store = usePulseCreditStore();
   const [mounted, setMounted] = useState(false);
 
@@ -100,13 +102,25 @@ export default function Dashboard() {
 
       {/* Navigation buttons */}
       <section className="flex gap-4">
-        <button className="btn-primary">
+        <button
+          className="btn-primary"
+          onClick={() => router.push(`/report?profile_id=${score.profile_id}`)}
+        >
           Download PDF Report
         </button>
-        <button className="btn-secondary">
+        <button
+          className="btn-secondary"
+          onClick={() => router.push('/simulate')}
+        >
           What-If Simulator
         </button>
-        <button className="btn-secondary">
+        <button
+          className="btn-secondary"
+          onClick={() => {
+            store.reset();
+            router.push('/');
+          }}
+        >
           New Upload
         </button>
       </section>

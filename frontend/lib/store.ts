@@ -51,6 +51,8 @@ interface Persona {
   pulse_score: number;
   band: string;
   dimensions: DimensionScores;
+  confidence?: [number, number] | number[];
+  shap_top3?: ShapValue[];
 }
 
 interface PulseCreditStore {
@@ -119,7 +121,57 @@ export const usePulseCreditStore = create<PulseCreditStore>((set) => ({
   setCurrentPage: (page) => set({ currentPage: page }),
   setPersonas: (personas: Persona[]) => set({ personas }),
 
-  loadPersona: (persona: 'ravi' | 'priya' | 'arjun') => set({ activePersona: persona }),
+  loadPersona: (persona: 'ravi' | 'priya' | 'arjun') =>
+    set((state) => {
+      const personaNameMap = {
+        ravi: 'Ravi',
+        priya: 'Priya',
+        arjun: 'Arjun',
+      } as const;
+
+      const selected = state.personas.find((p) => p.name.toLowerCase() === personaNameMap[persona].toLowerCase());
+
+      if (!selected) {
+        return { activePersona: persona };
+      }
+
+      const confidence = selected.confidence && selected.confidence.length === 2
+        ? [selected.confidence[0], selected.confidence[1]] as [number, number]
+        : [Math.max(300, selected.pulse_score - 30), Math.min(850, selected.pulse_score + 30)] as [number, number];
+
+      const normalizedShap = Array.isArray(selected.shap_top3)
+        ? selected.shap_top3
+        : Object.values((selected.shap_top3 || {}) as Record<string, { name?: string; feature?: string; value: number; impact: number }>).map((item) => ({
+            feature: item.feature || item.name || 'unknown_feature',
+            value: item.value,
+            impact: item.impact,
+          }));
+
+      const score: ScoreResult = {
+        profile_id: selected.id,
+        pulse_score: selected.pulse_score,
+        confidence_interval: confidence,
+        band: (selected.band as ScoreResult['band']) || 'fair',
+        archetype: selected.archetype,
+        dimensions: selected.dimensions,
+        shap_top3: normalizedShap,
+        explanation: `Demo persona loaded: ${selected.name}.`,
+        actions: [
+          { action: 'Make at least one UPI payment every 3 days', delta: 18, priority: 1 },
+          { action: 'Keep monthly spend within 20% of last month', delta: 14, priority: 2 },
+          { action: 'Build more reciprocal transfers with trusted contacts', delta: 11, priority: 3 },
+        ],
+        lender_memo: 'Demo profile memo. Upload a real statement for production-grade memo generation.',
+      };
+
+      return {
+        activePersona: persona,
+        profileId: selected.id,
+        archetype: selected.archetype,
+        score,
+        currentPage: 'dashboard',
+      };
+    }),
 
   setSimulatorOverride: (dim: keyof DimensionScores, value: number) =>
     set((state) => ({

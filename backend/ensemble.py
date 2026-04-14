@@ -33,7 +33,7 @@ class EnsembleScorer:
 
     def score(
         self, raw_features: np.ndarray
-    ) -> Tuple[int, int, int, Dict]:
+    ) -> Tuple[int, int, int, List[Dict[str, float]]]:
         """
         Compute ensemble score and SHAP values
         Returns: (pulse_score, conf_low, conf_high, shap_dict)
@@ -109,7 +109,7 @@ class EnsembleScorer:
 
         return np.clip(score, 0, 1)
 
-    def _compute_shap_values(self, raw_features: np.ndarray) -> Dict:
+    def _compute_shap_values(self, raw_features: np.ndarray) -> List[Dict[str, float]]:
         """
         Compute SHAP values for top 3 features
         SHAP explains which features contributed most to the score
@@ -128,21 +128,21 @@ class EnsembleScorer:
             top_3_indices = np.argsort(abs_shap)[-3:][::-1]
 
             feature_names = self._get_feature_names()
-            shap_dict = {}
+            shap_list: List[Dict[str, float]] = []
 
-            for rank, idx in enumerate(top_3_indices, 1):
+            for idx in top_3_indices:
                 if idx < len(feature_names):
-                    shap_dict[f"feature_{rank}"] = {
-                        "name": feature_names[idx],
+                    shap_list.append({
+                        "feature": feature_names[idx],
                         "value": float(raw_features[idx]),
                         "impact": float(shap_vals[idx]),
-                    }
+                    })
 
-            return shap_dict
+            return shap_list
 
         except Exception as e:
             print(f"SHAP computation error: {e}")
-            return {}
+            return []
 
     def _get_feature_names(self) -> List[str]:
         """Get human-readable feature names"""

@@ -9,15 +9,20 @@ import pickle
 from pathlib import Path
 from typing import Dict, Optional, List
 from datetime import datetime
+from uuid import UUID
+from tempfile import NamedTemporaryFile
 import numpy as np
 import pandas as pd
 import xgboost as xgb
 import torch
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from supabase import create_client
 
 from feature_engine import FeatureEngine
 from autoencoder import load_model as load_ae_model, get_reconstruction_error
@@ -53,12 +58,203 @@ models_cache = {
     "feature_scaler": None,
 }
 
+supabase_client = None
+
+profile_feature_cache: Dict[str, Dict] = {}
+profile_score_cache: Dict[str, Dict] = {}
+
+FEATURE_ORDER = [
+    "rhythm_cov",
+    "rhythm_streak",
+    "rhythm_recency_ratio",
+    "rhythm_weekly_fft",
+    "merchant_hhi",
+    "merchant_retention",
+    "merchant_entropy",
+    "merchant_recurring",
+    "social_unique_senders",
+    "social_sender_ratio",
+    "social_reciprocity",
+    "social_centrality",
+    "calendar_semester_score",
+    "calendar_stipend_regularity",
+    "calendar_rent_regularity",
+    "calendar_festival_adjusted",
+    "velocity_zscore",
+    "velocity_mom_delta",
+    "velocity_outlier_count",
+    "velocity_micro_split",
+    "nlp_productive_ratio",
+    "nlp_org_density",
+    "nlp_gemini_intent",
+    "nlp_remark_richness",
+]
+
+DIMENSION_PREFIXES = ["rhythm", "merchant", "social", "calendar", "velocity", "nlp"]
+
 # Initialize components
 feature_engine = FeatureEngine()
 parser = StatementParser()
 gemini_client = None
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
+
+
+def is_uuid_like(value: str) -> bool:
+    """Return True if value is a valid UUID string."""
+    try:
+        UUID(str(value))
+        return True
+    except Exception:
+        return False
+
+
+def _get_supabase_client():
+    """Lazy-init Supabase client using service role credentials."""
+    global supabase_client
+    if supabase_client is not None:
+        return supabase_client
+
+    url = os.getenv("SUPABASE_URL")
+    service_key = os.getenv("SUPABASE_SERVICE_KEY")
+    if not url or not service_key:
+        return None
+
+    try:
+        supabase_client = create_client(url, service_key)
+    except Exception as e:
+        print(f"Supabase init error: {e}")
+        supabase_client = None
+
+    return supabase_client
+
+
+def persist_profile_state(
+    profile_id: str,
+    archetype: str,
+    transactions: List[Dict],
+    raw_features: Dict,
+    dim_scores: Dict,
+    score_payload: Dict,
+) -> None:
+    """Persist profile scoring artifacts into Supabase tables."""
+    sb = _get_supabase_client()
+    if not sb or not is_uuid_like(profile_id):
+        return
+
+    try:
+        sb.table("profiles").upsert(
+            {
+                "id": profile_id,
+                "archetype": archetype,
+                "is_demo": False,
+            }
+        ).execute()
+
+        sb.table("transactions").delete().eq("profile_id", profile_id).execute()
+        txn_rows = []
+        for txn in transactions:
+            txn_rows.append(
+                {
+                    "profile_id": profile_id,
+                    "txn_date": pd.to_datetime(txn["txn_date"]).strftime("%Y-%m-%d"),
+                    "amount": float(txn["amount"]),
+                    "direction": txn["direction"],
+                    "vpa": txn.get("vpa"),
+                    "merchant_name": txn.get("merchant_name"),
+                    "category": txn.get("category"),
+                    "remarks": txn.get("remarks"),
+                    "utr": txn.get("utr"),
+                }
+            )
+        if txn_rows:
+            sb.table("transactions").insert(txn_rows).execute()
+
+        sb.table("feature_vectors").upsert(
+            {
+                "profile_id": profile_id,
+                "rhythm_score": round(float(dim_scores.get("rhythm", 0)), 2),
+                "merchant_score": round(float(dim_scores.get("merchant", 0)), 2),
+                "social_score": round(float(dim_scores.get("social", 0)), 2),
+                "calendar_score": round(float(dim_scores.get("calendar", 0)), 2),
+                "velocity_score": round(float(dim_scores.get("velocity", 0)), 2),
+                "nlp_score": round(float(dim_scores.get("nlp", 0)), 2),
+                "raw_features": raw_features,
+            }
+        ).execute()
+
+        sb.table("scores").upsert(
+            {
+                "profile_id": profile_id,
+                "pulse_score": int(score_payload["pulse_score"]),
+                "confidence_low": int(score_payload["confidence_interval"][0]),
+                "confidence_high": int(score_payload["confidence_interval"][1]),
+                "shap_values": score_payload.get("shap_top3", []),
+                "explanation": score_payload.get("explanation", ""),
+                "actions": score_payload.get("actions", []),
+                "lender_memo": score_payload.get("lender_memo", ""),
+            }
+        ).execute()
+
+    except Exception as e:
+        print(f"Supabase persist error for {profile_id}: {e}")
+
+
+def load_profile_state(profile_id: str) -> Dict:
+    """Load profile state from Supabase, falling back to in-memory cache."""
+    sb = _get_supabase_client()
+    if sb and is_uuid_like(profile_id):
+        try:
+            profile_rows = sb.table("profiles").select("archetype").eq("id", profile_id).limit(1).execute().data
+            fv_rows = sb.table("feature_vectors").select(
+                "raw_features,rhythm_score,merchant_score,social_score,calendar_score,velocity_score,nlp_score"
+            ).eq("profile_id", profile_id).limit(1).execute().data
+            score_rows = sb.table("scores").select(
+                "pulse_score,confidence_low,confidence_high,shap_values,explanation,actions,lender_memo"
+            ).eq("profile_id", profile_id).limit(1).execute().data
+
+            if profile_rows and fv_rows and score_rows:
+                profile = profile_rows[0]
+                fv = fv_rows[0]
+                score = score_rows[0]
+                return {
+                    "raw_features": fv.get("raw_features", {}),
+                    "dimensions": {
+                        "rhythm": float(fv.get("rhythm_score") or 0),
+                        "merchant": float(fv.get("merchant_score") or 0),
+                        "social": float(fv.get("social_score") or 0),
+                        "calendar": float(fv.get("calendar_score") or 0),
+                        "velocity": float(fv.get("velocity_score") or 0),
+                        "nlp": float(fv.get("nlp_score") or 0),
+                    },
+                    "archetype": profile.get("archetype", "salaried"),
+                    "score_data": {
+                        "profile_id": profile_id,
+                        "pulse_score": int(score.get("pulse_score") or 300),
+                        "confidence_interval": [
+                            int(score.get("confidence_low") or 300),
+                            int(score.get("confidence_high") or 330),
+                        ],
+                        "shap_top3": score.get("shap_values") or [],
+                        "explanation": score.get("explanation") or "",
+                        "actions": score.get("actions") or [],
+                        "lender_memo": score.get("lender_memo") or "",
+                    },
+                }
+        except Exception as e:
+            print(f"Supabase read error for {profile_id}: {e}")
+
+    cached_features = profile_feature_cache.get(profile_id)
+    cached_score = profile_score_cache.get(profile_id)
+    if cached_features and cached_score:
+        return {
+            "raw_features": cached_features["raw_features"],
+            "dimensions": cached_features["dimensions"],
+            "archetype": cached_features["archetype"],
+            "score_data": cached_score,
+        }
+
+    return {}
 
 
 @app.on_event("startup")
@@ -111,6 +307,11 @@ def load_models():
         else:
             print("⚠ GEMINI_API_KEY not set - Gemini explanations will use defaults")
 
+        if _get_supabase_client() is not None:
+            print("✓ Supabase client initialized")
+        else:
+            print("⚠ Supabase not configured - using in-memory cache")
+
     except Exception as e:
         print(f"Model loading error: {e}")
 
@@ -126,7 +327,8 @@ class ScoreRequest(BaseModel):
 
 
 class SimulateRequest(BaseModel):
-    profile_id: str
+    profile_id: Optional[str] = None
+    base_profile_id: Optional[str] = None
     overrides: Dict[str, float]
 
 
@@ -163,6 +365,7 @@ class ShapValue(BaseModel):
 
 
 class ScoreResponse(BaseModel):
+    profile_id: str
     pulse_score: int
     confidence_interval: List[int]
     band: str
@@ -255,7 +458,7 @@ async def compute_score(request: ScoreRequest):
         raw_features_dict, dim_scores = feature_engine.compute_all_features(df, request.profile_id)
 
         # Extract feature vector
-        feature_vector = [raw_features_dict.get(f"f{i}", 0.5) for i in range(24)]
+        feature_vector = [raw_features_dict.get(name, 0.5) for name in FEATURE_ORDER]
 
         # Normalize features
         if models_cache["feature_scaler"]:
@@ -296,13 +499,13 @@ async def compute_score(request: ScoreRequest):
         actions = []
         lender_memo = "Professional credit assessment available."
 
+        shap_values = result.get("shap_top3", [])
+
         if gemini_client:
             try:
-                shap_dict = result.get("shap_top3", {})
-
                 explanation = gemini_client.generate_explanation(
                     pulse_score=pulse_score,
-                    shap_dict=shap_dict,
+                    shap_values=shap_values,
                     archetype=archetype,
                     weakest_dimension=weakest_dim_name[0],
                     weakest_score=weakest_dim_name[1],
@@ -320,19 +523,49 @@ async def compute_score(request: ScoreRequest):
                     confidence_low=conf_low,
                     confidence_high=conf_high,
                     archetype=archetype,
-                    shap_dict=shap_dict,
+                    shap_values=shap_values,
                     dimensions=dim_scores,
                 )
             except Exception as gemini_error:
                 print(f"Gemini error: {gemini_error}")
 
+        response_payload = {
+            "profile_id": request.profile_id,
+            "pulse_score": pulse_score,
+            "confidence_interval": [conf_low, conf_high],
+            "band": result["band"],
+            "archetype": archetype,
+            "dimensions": {k: int(v) for k, v in dim_scores.items()},
+            "shap_top3": shap_values,
+            "explanation": explanation,
+            "actions": actions,
+            "lender_memo": lender_memo,
+        }
+
+        profile_feature_cache[request.profile_id] = {
+            "raw_features": raw_features_dict,
+            "dimensions": dim_scores,
+            "archetype": archetype,
+        }
+        profile_score_cache[request.profile_id] = response_payload
+
+        persist_profile_state(
+            profile_id=request.profile_id,
+            archetype=archetype,
+            transactions=request.transactions,
+            raw_features=raw_features_dict,
+            dim_scores=dim_scores,
+            score_payload=response_payload,
+        )
+
         return ScoreResponse(
+            profile_id=request.profile_id,
             pulse_score=pulse_score,
             confidence_interval=[conf_low, conf_high],
             band=result["band"],
             archetype=archetype,
             dimensions=DimensionScores(**{k: int(v) for k, v in dim_scores.items()}),
-            shap_top3=result.get("shap_top3", []),
+            shap_top3=shap_values,
             explanation=explanation,
             actions=actions,
             lender_memo=lender_memo,
@@ -349,22 +582,62 @@ async def simulate_score(request: SimulateRequest):
     Must respond < 200ms
     """
     try:
-        # This is a simplified version
-        # In production, would cache feature vector and only re-run ensemble
-        base_score = 650
+        profile_id = request.profile_id or request.base_profile_id
+        if not profile_id:
+            raise ValueError("profile_id or base_profile_id is required")
 
-        # Simple delta computation
-        score_delta = sum(request.overrides.values()) / len(request.overrides) - 50
+        loaded_state = load_profile_state(profile_id)
+        if not loaded_state:
+            raise ValueError("Profile not found. Run /api/score first.")
+        if not models_cache["xgb_model"]:
+            raise ValueError("XGBoost model not loaded - run: python backend/train.py")
 
-        simulated_score = int(base_score + score_delta * 0.5)
-        simulated_score = max(300, min(850, simulated_score))
+        raw_features = dict(loaded_state["raw_features"])
+        sim_dimensions = dict(loaded_state["dimensions"])
+        archetype = loaded_state["archetype"]
+        base_score_data = loaded_state["score_data"]
 
-        return {
-            "base_score": base_score,
-            "simulated_score": simulated_score,
-            "delta": simulated_score - base_score,
-            "confidence_interval": [simulated_score - 30, simulated_score + 30],
+        for dim_name, target in request.overrides.items():
+            if dim_name not in DIMENSION_PREFIXES:
+                continue
+            target_value = float(np.clip(target, 0, 100))
+            current_value = max(float(sim_dimensions.get(dim_name, 50.0)), 1.0)
+            ratio = target_value / current_value
+            sim_dimensions[dim_name] = target_value
+
+            for feature_name in FEATURE_ORDER:
+                if feature_name.startswith(f"{dim_name}_"):
+                    raw_val = float(raw_features.get(feature_name, 0.5))
+                    raw_features[feature_name] = float(np.clip(raw_val * ratio, 0, 1))
+
+        feature_vector = np.array([raw_features.get(name, 0.5) for name in FEATURE_ORDER], dtype=np.float32)
+
+        if models_cache["feature_scaler"]:
+            feature_vector = models_cache["feature_scaler"].transform(feature_vector.reshape(1, -1))[0]
+
+        result = score_profile(
+            feature_vector,
+            models_cache["xgb_model"],
+            models_cache["ae_model"],
+            models_cache.get("ae_error_threshold", 0.05),
+        )
+
+        simulated = {
+            "profile_id": profile_id,
+            "pulse_score": result["pulse_score"],
+            "confidence_interval": result["confidence_interval"],
+            "band": result["band"],
+            "archetype": archetype,
+            "dimensions": {k: int(v) for k, v in sim_dimensions.items()},
+            "shap_top3": result.get("shap_top3", []),
+            "explanation": "This score reflects your overridden behavioral dimensions.",
+            "actions": base_score_data.get("actions", []),
+            "lender_memo": "Simulated profile for planning only.",
+            "base_pulse_score": base_score_data.get("pulse_score"),
+            "delta": result["pulse_score"] - int(base_score_data.get("pulse_score", 0)),
         }
+
+        return simulated
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -380,22 +653,90 @@ def get_demo_personas():
 
     personas_list = []
     for key, persona in models_cache["demo_personas"].items():
+        shap_raw = persona.get("shap_top3", [])
+        if isinstance(shap_raw, dict):
+            shap_raw = [
+                {
+                    "feature": item.get("feature") or item.get("name", "unknown_feature"),
+                    "value": item.get("value", 0.0),
+                    "impact": item.get("impact", 0.0),
+                }
+                for item in shap_raw.values()
+            ]
+        persona["shap_top3"] = shap_raw
         personas_list.append(persona)
 
     return personas_list
 
 
 @app.get("/api/report/{profile_id}")
-def get_lender_report(profile_id: str):
+def get_lender_report(profile_id: str, background_tasks: BackgroundTasks):
     """
     Generate PDF lender report
     Returns binary PDF stream
     """
     try:
-        # Placeholder - would generate PDF with ReportLab
-        return JSONResponse(
-            {"message": f"PDF report for {profile_id} would be generated here"},
-            status_code=200,
+        loaded_state = load_profile_state(profile_id)
+        score_data = loaded_state.get("score_data") if loaded_state else None
+        if not score_data:
+            raise HTTPException(status_code=404, detail="Profile score not found. Run /api/score first.")
+
+        with NamedTemporaryFile(delete=False, suffix=f"_{profile_id}.pdf") as tmp_file:
+            pdf_path = tmp_file.name
+
+        c = canvas.Canvas(pdf_path, pagesize=A4)
+        width, height = A4
+        y = height - 50
+
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(40, y, "PulseCredit Lender Report")
+        y -= 30
+
+        c.setFont("Helvetica", 11)
+        c.drawString(40, y, f"Profile ID: {profile_id}")
+        y -= 18
+        c.drawString(40, y, f"Score: {score_data['pulse_score']} ({score_data['band']})")
+        y -= 18
+        c.drawString(40, y, f"Confidence: {score_data['confidence_interval'][0]} - {score_data['confidence_interval'][1]}")
+        y -= 24
+
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(40, y, "Dimensions")
+        y -= 18
+        c.setFont("Helvetica", 11)
+        for dim, val in score_data.get("dimensions", {}).items():
+            c.drawString(50, y, f"- {dim}: {val}")
+            y -= 16
+
+        y -= 8
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(40, y, "Action Roadmap")
+        y -= 18
+        c.setFont("Helvetica", 11)
+        for action in score_data.get("actions", [])[:3]:
+            c.drawString(50, y, f"- {action.get('action', '')} (+{action.get('delta', 0)})")
+            y -= 16
+
+        y -= 8
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(40, y, "Lender Memo")
+        y -= 18
+        c.setFont("Helvetica", 10)
+        for line in str(score_data.get("lender_memo", "")).split("\n"):
+            if y < 40:
+                c.showPage()
+                y = height - 40
+                c.setFont("Helvetica", 10)
+            c.drawString(50, y, line[:110])
+            y -= 14
+
+        c.save()
+        background_tasks.add_task(os.remove, pdf_path)
+
+        return FileResponse(
+            path=pdf_path,
+            media_type="application/pdf",
+            filename=f"pulsecredit-report-{profile_id}.pdf",
         )
 
     except Exception as e:

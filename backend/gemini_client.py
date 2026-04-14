@@ -25,16 +25,13 @@ class GeminiClient:
         self.model = genai.GenerativeModel("gemini-1.5-flash")
         self.rate_limit_delay = 4  # 15 RPM = 4 seconds between calls
 
-    def _format_shap_for_prompt(self, shap_dict: Dict) -> str:
+    def _format_shap_for_prompt(self, shap_values: List[Dict]) -> str:
         """Format SHAP values for Gemini prompt"""
         formatted = []
-        for i in range(1, 4):
-            key = f"feature_{i}"
-            if key in shap_dict:
-                feature = shap_dict[key]
-                formatted.append(
-                    f"  {i}. {feature['name']}: value={feature['value']:.2f}, impact={feature['impact']:+.2f}"
-                )
+        for idx, feature in enumerate(shap_values[:3], start=1):
+            formatted.append(
+                f"  {idx}. {feature['feature']}: value={feature['value']:.2f}, impact={feature['impact']:+.2f}"
+            )
 
         return "\n".join(formatted) if formatted else "No significant features"
 
@@ -54,7 +51,7 @@ class GeminiClient:
     def generate_explanation(
         self,
         pulse_score: int,
-        shap_dict: Dict,
+        shap_values: List[Dict],
         archetype: str,
         weakest_dimension: str,
         weakest_score: float,
@@ -66,7 +63,7 @@ class GeminiClient:
         prompt = f"""You are a financial advisor explaining a credit score to a first-time borrower in India.
 
 Score: {pulse_score}/850
-Top factors (SHAP): {self._format_shap_for_prompt(shap_dict)}
+Top factors (SHAP): {self._format_shap_for_prompt(shap_values)}
 User archetype: {archetype}
 Weakest dimension: {weakest_dimension} (score: {weakest_score:.0f}/100)
 
@@ -137,7 +134,7 @@ Return JSON: {{"actions": [{{"action": "...", "delta": 18, "priority": 1}}, ...]
         confidence_low: int,
         confidence_high: int,
         archetype: str,
-        shap_dict: Dict,
+        shap_values: List[Dict],
         dimensions: Dict[str, float],
     ) -> str:
         """
@@ -148,15 +145,12 @@ Return JSON: {{"actions": [{{"action": "...", "delta": 18, "priority": 1}}, ...]
         positive_shap = []
         negative_shap = []
 
-        for i in range(1, 4):
-            key = f"feature_{i}"
-            if key in shap_dict:
-                feature = shap_dict[key]
-                impact = feature.get("impact", 0)
-                if impact > 0:
-                    positive_shap.append(f"  - {feature['name']}: +{impact:.0f}")
-                else:
-                    negative_shap.append(f"  - {feature['name']}: {impact:.0f}")
+        for feature in shap_values[:3]:
+            impact = feature.get("impact", 0)
+            if impact > 0:
+                positive_shap.append(f"  - {feature['feature']}: +{impact:.0f}")
+            else:
+                negative_shap.append(f"  - {feature['feature']}: {impact:.0f}")
 
         positive_str = "\n".join(positive_shap) if positive_shap else "  - Consistent payment patterns"
         negative_str = "\n".join(negative_shap) if negative_shap else "  - Limited history"
@@ -248,15 +242,15 @@ if __name__ == "__main__":
         client = GeminiClient(api_key)
 
         # Test explanation
-        shap_dict = {
-            "feature_1": {"name": "rhythm_cov", "value": 0.15, "impact": 25},
-            "feature_2": {"name": "merchant_hhi", "value": 0.52, "impact": 12},
-            "feature_3": {"name": "velocity_zscore", "value": 0.3, "impact": -8},
-        }
+        shap_values = [
+            {"feature": "rhythm_cov", "value": 0.15, "impact": 25},
+            {"feature": "merchant_hhi", "value": 0.52, "impact": 12},
+            {"feature": "velocity_zscore", "value": 0.3, "impact": -8},
+        ]
 
         explanation = client.generate_explanation(
             pulse_score=612,
-            shap_dict=shap_dict,
+            shap_values=shap_values,
             archetype="student",
             weakest_dimension="velocity",
             weakest_score=48,
@@ -275,7 +269,7 @@ if __name__ == "__main__":
             confidence_low=582,
             confidence_high=642,
             archetype="student",
-            shap_dict=shap_dict,
+            shap_values=shap_values,
             dimensions=dimensions,
         )
         print(f"Memo: {memo}")
