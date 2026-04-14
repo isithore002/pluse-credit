@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiService } from '@/lib/api';
 import { usePulseCreditStore } from '@/lib/store';
 
-export default function ReportPage() {
+function ReportPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const store = usePulseCreditStore();
@@ -63,5 +63,13 @@ export default function ReportPage() {
         {error && <div className="mt-4 rounded border border-red-700 bg-red-900/20 p-3 text-red-200">{error}</div>}
       </section>
     </div>
+  );
+}
+
+export default function ReportPage() {
+  return (
+    <Suspense fallback={<div className="py-8 text-slate-300">Loading report...</div>}>
+      <ReportPageContent />
+    </Suspense>
   );
 }
