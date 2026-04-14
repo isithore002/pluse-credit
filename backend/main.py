@@ -317,7 +317,7 @@ def load_models():
         api_key = os.getenv("GEMINI_API_KEY")
         if api_key:
             gemini_client = GeminiClient(api_key=api_key)
-            print("✓ Gemini client initialized")
+            print("✓ Gemini client initialized (lazy availability check)")
         else:
             print("⚠ GEMINI_API_KEY not set - Gemini explanations will use defaults")
 
@@ -514,7 +514,7 @@ async def compute_score(request: ScoreRequest):
 
         shap_values = result.get("shap_top3", [])
 
-        if gemini_client:
+        if gemini_client and gemini_client.is_available:
             try:
                 explanation = gemini_client.generate_explanation(
                     pulse_score=pulse_score,

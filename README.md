@@ -19,37 +19,60 @@ PulseCredit solves a critical problem: 45% of Indian adults have never checked t
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.9+
+- Python 3.11.x
 - Node.js 18+
 - Gemini API key (free tier)
 - Supabase account (free tier)
+
+### Team Default Backend Bootstrap
+
+Use the bootstrap script from repo root. This is the default team workflow and avoids local interpreter drift.
+
+Windows PowerShell:
+
+```powershell
+./scripts/bootstrap_backend.ps1
+```
+
+macOS/Linux:
+
+```bash
+./scripts/bootstrap_backend.sh
+```
+
+Important: do not use Python 3.15 alpha environments for this project. Use `.venv-clean` created by the scripts.
 
 ### Backend Setup
 
 ```bash
 # 1. Clone and navigate
 git clone <repo-url>
-cd pulse-credit/backend
+cd pulse-credit
 
-# 2. Create venv
-python -m venv venv
-source venv/bin/activate  # or `venv\Scripts\activate` on Windows
+# 2. Bootstrap reproducible backend env (.venv-clean)
+# Windows: ./scripts/bootstrap_backend.ps1
+# macOS/Linux: ./scripts/bootstrap_backend.sh
 
-# 3. Install dependencies
-pip install -r requirements.txt
+# 3. Activate environment manually (optional)
+# Windows: ./.venv-clean/Scripts/Activate.ps1
+# macOS/Linux: source .venv-clean/bin/activate
+# Set helper for commands below:
+# Windows: VENV_PY=.venv-clean/Scripts/python.exe
+# macOS/Linux: VENV_PY=.venv-clean/bin/python
 
 # 4. Download spaCy model
-python -m spacy download en_core_web_sm
+$VENV_PY -m spacy download en_core_web_sm
 
 # 5. Set environment variables
-cp ../.env.example ../.env
+cp .env.example .env
 # Edit .env with your API keys
 
 # 6. Train models (generates 1,000 synthetic profiles + trains XGBoost + AE)
-python train.py
+$VENV_PY backend/train.py
 
 # 7. Start FastAPI server
-python -m uvicorn main:app --reload
+cd backend
+$VENV_PY -m uvicorn main:app --reload
 ```
 
 FastAPI runs on `http://localhost:8000`
@@ -173,7 +196,7 @@ Compute full credit score with explanations
 ```
 
 ### POST `/api/simulate`
-What-if simulation (in-memory, < 200ms response)
+What-if simulation (DB-backed base profile, strict Supabase mode)
 ```json
 {
   "base_score": 650,
@@ -261,6 +284,10 @@ NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 ```
 
+Notes:
+- `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` are mandatory in strict DB mode. Backend startup fails fast if either is missing.
+- If `GEMINI_API_KEY` is invalid, Gemini is disabled once per process and fallback narratives are used without per-request log spam.
+
 ## 📈 Performance Targets
 
 - `/api/parse`: < 2 seconds (PDF parsing + feature compute)
@@ -309,6 +336,22 @@ pytest tests/
 cd frontend
 npm run test
 ```
+
+CI additionally runs strict DB-mode smoke checks in [.github/workflows/deploy.yml](.github/workflows/deploy.yml):
+- startup must fail when Supabase env vars are missing
+- `/api/score` must persist rows to `profiles`, `transactions`, `feature_vectors`, `scores`
+- `/api/simulate` must resolve the profile from DB-backed state
+
+## 📌 Dependency Rationale
+
+Backend uses `fastapi-slim==0.111.0` (instead of `fastapi`) to keep dependency resolution stable with `spacy==3.7.4` and `typer==0.9.4`.
+
+Why this matters:
+- `fastapi` pulls `fastapi-cli` versions that require newer `typer`
+- `spacy` pins to `<0.10` typer range
+- this mismatch caused clean install failures in new virtual environments
+
+Do not switch back to `fastapi` unless you also re-evaluate the full `spacy` and `typer` compatibility matrix.
 
 ## 📝 Score Bands
 

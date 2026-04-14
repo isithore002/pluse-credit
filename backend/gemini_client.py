@@ -24,6 +24,18 @@ class GeminiClient:
         genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel("gemini-1.5-flash")
         self.rate_limit_delay = 4  # 15 RPM = 4 seconds between calls
+        self._available = True
+        self._unavailable_reason = ""
+
+    @property
+    def is_available(self) -> bool:
+        return self._available
+
+    def _mark_unavailable(self, reason: str) -> None:
+        if self._available:
+            self._available = False
+            self._unavailable_reason = reason
+            print(f"Gemini disabled for this process: {reason}")
 
     def _format_shap_for_prompt(self, shap_values: List[Dict]) -> str:
         """Format SHAP values for Gemini prompt"""
@@ -74,6 +86,9 @@ Sentence 2: What is holding them back and why it matters to a lender.
 Return JSON: {{"explanation": "..."}}"""
 
         try:
+            if not self._available:
+                return f"Default: Score {pulse_score} indicates {archetype} with strong {weakest_dimension}."
+
             response = self.model.generate_content(prompt)
             time.sleep(self.rate_limit_delay)
 
@@ -81,7 +96,7 @@ Return JSON: {{"explanation": "..."}}"""
             return result.get("explanation", response.text)
 
         except Exception as e:
-            print(f"Gemini explanation error: {e}")
+            self._mark_unavailable(f"explanation call failed: {e}")
             return f"Default: Score {pulse_score} indicates {archetype} with strong {weakest_dimension}."
 
     def generate_actions(
@@ -111,6 +126,9 @@ Be hyper-specific — not "pay regularly" but "make at least one UPI payment eve
 Return JSON: {{"actions": [{{"action": "...", "delta": 18, "priority": 1}}, ...]}}"""
 
         try:
+            if not self._available:
+                return self._generate_default_actions(dims_sorted[0][0], archetype)
+
             response = self.model.generate_content(prompt)
             time.sleep(self.rate_limit_delay)
 
@@ -124,7 +142,7 @@ Return JSON: {{"actions": [{{"action": "...", "delta": 18, "priority": 1}}, ...]
             return actions[:3]
 
         except Exception as e:
-            print(f"Gemini actions error: {e}")
+            self._mark_unavailable(f"actions call failed: {e}")
             return self._generate_default_actions(dims_sorted[0][0], archetype)
 
     def generate_lender_memo(
@@ -177,6 +195,9 @@ Recommendation must be one of: "Approve up to ₹{{amount}}" / "Approve with mon
 Return JSON: {{"lender_memo": "..."}}"""
 
         try:
+            if not self._available:
+                return self._generate_default_memo(pulse_score, band, archetype)
+
             response = self.model.generate_content(prompt)
             time.sleep(self.rate_limit_delay)
 
@@ -184,7 +205,7 @@ Return JSON: {{"lender_memo": "..."}}"""
             return result.get("lender_memo", response.text)
 
         except Exception as e:
-            print(f"Gemini memo error: {e}")
+            self._mark_unavailable(f"memo call failed: {e}")
             return self._generate_default_memo(pulse_score, band, archetype)
 
     def _generate_default_actions(self, weakest_dim: str, archetype: str) -> List[Dict]:
