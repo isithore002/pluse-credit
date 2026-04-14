@@ -20,6 +20,11 @@ build/
 *.pkl
 *.pt
 *.pth
+!backend/models/model.pkl
+!backend/models/autoencoder.pt
+!backend/models/feature_scaler.pkl
+!backend/models/ae_error_threshold.pkl
+!backend/models/demo_personas.pkl
 
 # Node
 node_modules/
@@ -65,3 +70,8 @@ temp/
 backend/models/*.pkl
 backend/models/*.pt
 backend/data/*.csv
+!backend/models/model.pkl
+!backend/models/autoencoder.pt
+!backend/models/feature_scaler.pkl
+!backend/models/ae_error_threshold.pkl
+!backend/models/demo_personas.pkl

@@ -110,7 +110,7 @@ jobs:
   deploy-backend:
     needs: [backend-tests, backend-db-smoke]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && vars.ENABLE_RENDER_DEPLOY == 'true'
     steps:
       - uses: actions/checkout@v4
       - name: Deploy to Render
