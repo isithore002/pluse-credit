@@ -92,13 +92,19 @@ class FeatureEngine:
             features["cov"] = 1.0
 
         # F2: Longest consecutive-day streak with at least one DR transaction
-        dr_dates_set = set(df[df["direction"] == "DR"]["txn_date"].values)
+        dr_dates = (
+            pd.to_datetime(df[df["direction"] == "DR"]["txn_date"], errors="coerce")
+            .dropna()
+            .dt.normalize()
+            .sort_values()
+            .unique()
+        )
         max_streak = 0
         current_streak = 0
-        if len(dr_dates_set) > 0:
-            for i in range((max(dr_dates_set) - min(dr_dates_set)).days + 1):
-                date = min(dr_dates_set) + pd.Timedelta(days=i)
-                if pd.Timestamp(date) in dr_dates_set:
+        if len(dr_dates) > 0:
+            dr_dates_set = {pd.Timestamp(d) for d in dr_dates}
+            for date in pd.date_range(start=dr_dates[0], end=dr_dates[-1], freq="D"):
+                if date in dr_dates_set:
                     current_streak += 1
                     max_streak = max(max_streak, current_streak)
                 else:

@@ -63,9 +63,6 @@ models_cache = {
 
 supabase_client = None
 
-profile_feature_cache: Dict[str, Dict] = {}
-profile_score_cache: Dict[str, Dict] = {}
-
 FEATURE_ORDER = [
     "rhythm_cov",
     "rhythm_streak",
@@ -121,13 +118,12 @@ def _get_supabase_client():
     url = os.getenv("SUPABASE_URL")
     service_key = os.getenv("SUPABASE_SERVICE_KEY")
     if not url or not service_key:
-        return None
+        raise RuntimeError("Missing SUPABASE_URL or SUPABASE_SERVICE_KEY in environment")
 
     try:
         supabase_client = create_client(url, service_key)
     except Exception as e:
-        print(f"Supabase init error: {e}")
-        supabase_client = None
+        raise RuntimeError(f"Supabase init error: {e}") from e
 
     return supabase_client
 
@@ -142,8 +138,8 @@ def persist_profile_state(
 ) -> None:
     """Persist profile scoring artifacts into Supabase tables."""
     sb = _get_supabase_client()
-    if not sb or not is_uuid_like(profile_id):
-        return
+    if not is_uuid_like(profile_id):
+        raise ValueError("profile_id must be a valid UUID for DB persistence")
 
     try:
         sb.table("profiles").upsert(
@@ -200,64 +196,79 @@ def persist_profile_state(
         ).execute()
 
     except Exception as e:
-        print(f"Supabase persist error for {profile_id}: {e}")
+        raise RuntimeError(f"Supabase persist error for {profile_id}: {e}") from e
 
 
 def load_profile_state(profile_id: str) -> Dict:
-    """Load profile state from Supabase, falling back to in-memory cache."""
+    """Load profile state from Supabase only (strict DB mode)."""
     sb = _get_supabase_client()
-    if sb and is_uuid_like(profile_id):
-        try:
-            profile_rows = sb.table("profiles").select("archetype").eq("id", profile_id).limit(1).execute().data
-            fv_rows = sb.table("feature_vectors").select(
-                "raw_features,rhythm_score,merchant_score,social_score,calendar_score,velocity_score,nlp_score"
-            ).eq("profile_id", profile_id).limit(1).execute().data
-            score_rows = sb.table("scores").select(
-                "pulse_score,confidence_low,confidence_high,shap_values,explanation,actions,lender_memo"
-            ).eq("profile_id", profile_id).limit(1).execute().data
+    if not is_uuid_like(profile_id):
+        return {}
 
-            if profile_rows and fv_rows and score_rows:
-                profile = profile_rows[0]
-                fv = fv_rows[0]
-                score = score_rows[0]
-                return {
-                    "raw_features": fv.get("raw_features", {}),
+    try:
+        profile_rows = sb.table("profiles").select("archetype").eq("id", profile_id).limit(1).execute().data
+        fv_rows = sb.table("feature_vectors").select(
+            "raw_features,rhythm_score,merchant_score,social_score,calendar_score,velocity_score,nlp_score"
+        ).eq("profile_id", profile_id).limit(1).execute().data
+        score_rows = sb.table("scores").select(
+            "pulse_score,confidence_low,confidence_high,shap_values,explanation,actions,lender_memo"
+        ).eq("profile_id", profile_id).limit(1).execute().data
+
+        if profile_rows and fv_rows and score_rows:
+            profile = profile_rows[0]
+            fv = fv_rows[0]
+            score = score_rows[0]
+            pulse_score = int(score.get("pulse_score") or 300)
+            return {
+                "raw_features": fv.get("raw_features", {}),
+                "dimensions": {
+                    "rhythm": float(fv.get("rhythm_score") or 0),
+                    "merchant": float(fv.get("merchant_score") or 0),
+                    "social": float(fv.get("social_score") or 0),
+                    "calendar": float(fv.get("calendar_score") or 0),
+                    "velocity": float(fv.get("velocity_score") or 0),
+                    "nlp": float(fv.get("nlp_score") or 0),
+                },
+                "archetype": profile.get("archetype", "salaried"),
+                "score_data": {
+                    "profile_id": profile_id,
+                    "pulse_score": pulse_score,
+                    "confidence_interval": [
+                        int(score.get("confidence_low") or 300),
+                        int(score.get("confidence_high") or 330),
+                    ],
+                    "band": get_score_band(pulse_score),
                     "dimensions": {
-                        "rhythm": float(fv.get("rhythm_score") or 0),
-                        "merchant": float(fv.get("merchant_score") or 0),
-                        "social": float(fv.get("social_score") or 0),
-                        "calendar": float(fv.get("calendar_score") or 0),
-                        "velocity": float(fv.get("velocity_score") or 0),
-                        "nlp": float(fv.get("nlp_score") or 0),
+                        "rhythm": int(float(fv.get("rhythm_score") or 0)),
+                        "merchant": int(float(fv.get("merchant_score") or 0)),
+                        "social": int(float(fv.get("social_score") or 0)),
+                        "calendar": int(float(fv.get("calendar_score") or 0)),
+                        "velocity": int(float(fv.get("velocity_score") or 0)),
+                        "nlp": int(float(fv.get("nlp_score") or 0)),
                     },
-                    "archetype": profile.get("archetype", "salaried"),
-                    "score_data": {
-                        "profile_id": profile_id,
-                        "pulse_score": int(score.get("pulse_score") or 300),
-                        "confidence_interval": [
-                            int(score.get("confidence_low") or 300),
-                            int(score.get("confidence_high") or 330),
-                        ],
-                        "shap_top3": score.get("shap_values") or [],
-                        "explanation": score.get("explanation") or "",
-                        "actions": score.get("actions") or [],
-                        "lender_memo": score.get("lender_memo") or "",
-                    },
-                }
-        except Exception as e:
-            print(f"Supabase read error for {profile_id}: {e}")
-
-    cached_features = profile_feature_cache.get(profile_id)
-    cached_score = profile_score_cache.get(profile_id)
-    if cached_features and cached_score:
-        return {
-            "raw_features": cached_features["raw_features"],
-            "dimensions": cached_features["dimensions"],
-            "archetype": cached_features["archetype"],
-            "score_data": cached_score,
-        }
+                    "shap_top3": score.get("shap_values") or [],
+                    "explanation": score.get("explanation") or "",
+                    "actions": score.get("actions") or [],
+                    "lender_memo": score.get("lender_memo") or "",
+                },
+            }
+    except Exception as e:
+        raise RuntimeError(f"Supabase read error for {profile_id}: {e}") from e
 
     return {}
+
+
+def get_score_band(score: int) -> str:
+    """Map pulse score to canonical band labels."""
+    if score >= 750:
+        return "excellent"
+    if score >= 700:
+        return "very_good"
+    if score >= 650:
+        return "good"
+    if score >= 600:
+        return "fair"
+    return "poor"
 
 
 @app.on_event("startup")
@@ -310,13 +321,12 @@ def load_models():
         else:
             print("⚠ GEMINI_API_KEY not set - Gemini explanations will use defaults")
 
-        if _get_supabase_client() is not None:
-            print("✓ Supabase client initialized")
-        else:
-            print("⚠ Supabase not configured - using in-memory cache")
+        _get_supabase_client()
+        print("✓ Supabase client initialized")
 
     except Exception as e:
         print(f"Model loading error: {e}")
+        raise
 
 
 # Pydantic models for request/response
@@ -544,13 +554,6 @@ async def compute_score(request: ScoreRequest):
             "actions": actions,
             "lender_memo": lender_memo,
         }
-
-        profile_feature_cache[request.profile_id] = {
-            "raw_features": raw_features_dict,
-            "dimensions": dim_scores,
-            "archetype": archetype,
-        }
-        profile_score_cache[request.profile_id] = response_payload
 
         persist_profile_state(
             profile_id=request.profile_id,
