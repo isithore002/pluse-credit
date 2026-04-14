@@ -111,7 +111,7 @@ def train_autoencoder(
     error_mean = float(np.mean(val_errors))
     error_std = float(np.std(val_errors))
 
-    print(f"✓ Autoencoder trained. Reconstruction error (val): {error_mean:.4f} ± {error_std:.4f}")
+    print(f"[OK] Autoencoder trained. Reconstruction error (val): {error_mean:.4f} +/- {error_std:.4f}")
 
     return model, error_mean, error_std
 
@@ -134,7 +134,7 @@ def get_reconstruction_error(model: CreditAutoencoder, X: np.ndarray, device: st
 def save_model(model: CreditAutoencoder, path: str):
     """Save autoencoder to file"""
     torch.save(model.state_dict(), path)
-    print(f"✓ Autoencoder saved to {path}")
+    print(f"[OK] Autoencoder saved to {path}")
 
 
 def load_model(path: str, device: str = "cpu") -> CreditAutoencoder:
@@ -142,7 +142,7 @@ def load_model(path: str, device: str = "cpu") -> CreditAutoencoder:
     model = CreditAutoencoder()
     model.load_state_dict(torch.load(path, map_location=device))
     model.to(device)
-    print(f"✓ Autoencoder loaded from {path}")
+    print(f"[OK] Autoencoder loaded from {path}")
     return model
 
 

@@ -185,7 +185,7 @@ class StatementParser:
             # Create profile ID
             profile_id = str(uuid.uuid4())
 
-            print(f"✓ Parsed {len(transactions)} transactions from {txn_date}")
+            print(f"[OK] Parsed {len(transactions)} transactions from {txn_date}")
 
             return profile_id, transactions
 

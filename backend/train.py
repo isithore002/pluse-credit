@@ -83,7 +83,7 @@ def prepare_feature_matrix(
     # Normalize labels to 0-1 (300-850 range)
     y_normalized = (y - 300) / 550
 
-    print(f"✓ Features computed for {len(X)} profiles")
+    print(f"[OK] Features computed for {len(X)} profiles")
     print(f"  Feature shape: {X_scaled.shape}")
     print(f"  Label range: {y.min():.0f} - {y.max():.0f}")
 
@@ -115,7 +115,7 @@ def train_xgboost(X_train: np.ndarray, y_train: np.ndarray) -> xgb.Booster:
         verbose_eval=50,
     )
 
-    print("✓ XGBoost model trained")
+    print("[OK] XGBoost model trained")
     return model
 
 
@@ -243,7 +243,7 @@ def generate_demo_personas(
                 }
                 break
 
-    print(f"✓ Generated {len(demo_personas)} demo personas:")
+    print(f"[OK] Generated {len(demo_personas)} demo personas:")
     for name, data in demo_personas.items():
         print(f"  - {data['name']}: {data['pulse_score']} ({data['band']})")
 
@@ -291,7 +291,7 @@ def main():
 
     # Save XGBoost
     xgb_model.save_model(str(models_dir / "model.pkl"))
-    print(f"✓ XGBoost saved to models/model.pkl")
+    print(f"[OK] XGBoost saved to models/model.pkl")
 
     # Step 5: Train Autoencoder
     print("\n" + "=" * 60)
@@ -302,7 +302,7 @@ def main():
 
     # Save Autoencoder
     save_ae_model(ae_model, str(models_dir / "autoencoder.pt"))
-    print(f"✓ Autoencoder saved to models/autoencoder.pt")
+    print(f"[OK] Autoencoder saved to models/autoencoder.pt")
 
     # Save error threshold
     with open(models_dir / "ae_error_threshold.pkl", "wb") as f:

@@ -258,7 +258,7 @@ if __name__ == "__main__":
 
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        print("⚠ GEMINI_API_KEY not set. Skipping test.")
+        print("[WARN] GEMINI_API_KEY not set. Skipping test.")
     else:
         client = GeminiClient(api_key)
 
