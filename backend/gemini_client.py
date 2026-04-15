@@ -22,10 +22,19 @@ class GeminiClient:
             raise ValueError("GEMINI_API_KEY not set in environment")
 
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel("gemini-1.5-flash")
         self.rate_limit_delay = 4  # 15 RPM = 4 seconds between calls
         self._available = True
         self._unavailable_reason = ""
+        self._model_resolution_error = ""
+        self.model_name = self._resolve_model_name()
+
+        if self.model_name:
+            self.model = genai.GenerativeModel(self.model_name)
+            print(f"[OK] Gemini model selected: {self.model_name}")
+        else:
+            self.model = None
+            reason = self._model_resolution_error or "No supported Gemini generateContent model available"
+            self._mark_unavailable(reason)
 
     @property
     def is_available(self) -> bool:
@@ -36,6 +45,71 @@ class GeminiClient:
             self._available = False
             self._unavailable_reason = reason
             print(f"Gemini disabled for this process: {reason}")
+
+    def _resolve_model_name(self) -> str:
+        """Pick a working Gemini model for generateContent calls."""
+        last_error = ""
+        preferred = os.getenv("GEMINI_MODEL", "").strip()
+        candidate_names = [
+            preferred,
+            "models/gemini-2.5-flash",
+            "models/gemini-2.0-flash",
+            "models/gemini-2.0-flash-lite",
+            "models/gemini-1.5-flash",
+            "gemini-1.5-flash",
+            "gemini-1.5-flash-latest",
+            "gemini-2.0-flash",
+            "gemini-2.0-flash-lite",
+            "gemini-2.5-flash",
+            "gemini-2.5-flash-lite",
+        ]
+
+        # De-duplicate while preserving order.
+        unique_candidates = []
+        for name in candidate_names:
+            if name and name not in unique_candidates:
+                unique_candidates.append(name)
+
+        for name in unique_candidates:
+            try:
+                model = genai.GenerativeModel(name)
+                model.generate_content(
+                    "Respond with exactly this JSON: {\"ok\": true}",
+                    generation_config={"max_output_tokens": 32, "temperature": 0},
+                )
+                return name
+            except Exception as e:
+                last_error = str(e)
+                continue
+
+        # Last resort: discover from available models.
+        try:
+            for model_info in genai.list_models():
+                supported = getattr(model_info, "supported_generation_methods", []) or []
+                if "generateContent" not in supported:
+                    continue
+
+                model_name = getattr(model_info, "name", "")
+                if not model_name:
+                    continue
+
+                try:
+                    model = genai.GenerativeModel(model_name)
+                    model.generate_content(
+                        "Respond with exactly this JSON: {\"ok\": true}",
+                        generation_config={"max_output_tokens": 32, "temperature": 0},
+                    )
+                    return model_name
+                except Exception as e:
+                    last_error = str(e)
+                    continue
+        except Exception as e:
+            last_error = str(e)
+
+        if last_error:
+            self._model_resolution_error = f"Gemini model resolution failed: {last_error}"
+
+        return ""
 
     def _format_shap_for_prompt(self, shap_values: List[Dict]) -> str:
         """Format SHAP values for Gemini prompt"""

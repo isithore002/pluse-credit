@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDropzone } from 'react-dropzone';
+import axios from 'axios';
 import { usePulseCreditStore } from '@/lib/store';
 import { apiService } from '@/lib/api';
 
@@ -12,6 +13,7 @@ export default function Home() {
   const router = useRouter();
   const store = usePulseCreditStore();
   const [hasBackend, setHasBackend] = useState(true);
+  const [pdfPassword, setPdfPassword] = useState('');
 
   useEffect(() => {
     // Check backend health
@@ -37,9 +39,10 @@ export default function Home() {
     };
 
     loadPersonas();
-  }, [store]);
+  }, []);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
+    noClick: true,
     accept: {
       'application/pdf': ['.pdf'],
       'text/csv': ['.csv'],
@@ -51,7 +54,8 @@ export default function Home() {
       store.setUploading(true);
 
       try {
-        const result = await apiService.parseStatement(file);
+        const isPdf = file.name.toLowerCase().endsWith('.pdf');
+        const result = await apiService.parseStatement(file, 'HDFC', isPdf ? pdfPassword : '');
         store.setProfileId(result.profile_id);
         store.setTransactions(result.transactions);
 
@@ -65,7 +69,14 @@ export default function Home() {
 
         router.push('/dashboard');
       } catch (error) {
-        store.setError(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        let message = 'Unknown error';
+        if (axios.isAxiosError(error)) {
+          const detail = error.response?.data?.detail;
+          message = detail || error.message;
+        } else if (error instanceof Error) {
+          message = error.message;
+        }
+        store.setError(`Upload failed: ${message}`);
       } finally {
         store.setUploading(false);
         store.setLoading(false);
@@ -135,7 +146,18 @@ export default function Home() {
                 {isDragActive ? 'Drop your statement here' : 'Drag and drop your UPI statement'}
               </p>
               <p className="mt-2 text-sm text-slate-400">PDF or CSV • HDFC, SBI, ICICI, Kotak supported</p>
-              <button className="btn-primary mt-6">Select File</button>
+              <div className="mx-auto mt-4 max-w-sm">
+                <input
+                  type="password"
+                  value={pdfPassword}
+                  onChange={(e) => setPdfPassword(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  placeholder="PDF password (optional)"
+                  className="w-full rounded-md border border-slate-600 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 placeholder-slate-400 focus:border-purple-500 focus:outline-none"
+                />
+              </div>
+              <button type="button" onClick={open} className="btn-primary mt-6">Select File</button>
             </>
           )}
         </div>

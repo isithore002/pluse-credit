@@ -1,0 +1,17 @@
+﻿dry-run timestamp: 20260415_000200
+backend-tests: 
+PASS
+backend missing-env assertion: 
+PASS
+backend startup health: 
+PASS
+backend smoke_db_mode: 
+FAIL
+frontend build: 
+FAIL
+logs:
+- h:\pulse-credit\ci-proof\20260415_000200_backend-tests.log
+- h:\pulse-credit\ci-proof\20260415_000200_backend-missing-env.log
+- h:\pulse-credit\ci-proof\20260415_000200_backend-startup.log
+- h:\pulse-credit\ci-proof\20260415_000200_backend-smoke.log
+- h:\pulse-credit\ci-proof\20260415_000200_frontend-build.log

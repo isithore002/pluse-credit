@@ -53,6 +53,7 @@ app.add_middleware(
 # Global models loaded at startup
 MODELS_DIR = Path(__file__).parent / "models"
 DATA_DIR = Path(__file__).parent / "data"
+UPLOAD_TMP_DIR = DATA_DIR / "tmp_uploads"
 
 models_cache = {
     "xgb_model": None,
@@ -63,6 +64,7 @@ models_cache = {
 }
 
 supabase_client = None
+profile_state_cache: Dict[str, Dict] = {}
 
 FEATURE_ORDER = [
     "rhythm_cov",
@@ -108,6 +110,16 @@ def is_uuid_like(value: str) -> bool:
         return True
     except Exception:
         return False
+
+
+def is_strict_db_mode() -> bool:
+    """Return whether DB connectivity should fail-fast for this runtime."""
+    strict_env = os.getenv("STRICT_DB_MODE")
+    if strict_env is not None:
+        return strict_env.strip().lower() in {"1", "true", "yes", "on"}
+
+    environment = os.getenv("ENVIRONMENT", "development").strip().lower()
+    return environment in {"production", "staging"}
 
 
 def _get_supabase_client():
@@ -193,11 +205,33 @@ def persist_profile_state(
     score_payload: Dict,
 ) -> None:
     """Persist profile scoring artifacts into Supabase tables."""
-    _get_supabase_client()
+
+    score_data = {
+        "profile_id": profile_id,
+        "pulse_score": int(score_payload["pulse_score"]),
+        "confidence_interval": [
+            int(score_payload["confidence_interval"][0]),
+            int(score_payload["confidence_interval"][1]),
+        ],
+        "band": get_score_band(int(score_payload["pulse_score"])),
+        "dimensions": {k: int(v) for k, v in dim_scores.items()},
+        "shap_top3": score_payload.get("shap_top3", []),
+        "explanation": score_payload.get("explanation", ""),
+        "actions": score_payload.get("actions", []),
+        "lender_memo": score_payload.get("lender_memo", ""),
+    }
+    profile_state_cache[profile_id] = {
+        "raw_features": dict(raw_features),
+        "dimensions": {k: float(v) for k, v in dim_scores.items()},
+        "archetype": archetype,
+        "score_data": score_data,
+    }
+
     if not is_uuid_like(profile_id):
         raise ValueError("profile_id must be a valid UUID for DB persistence")
 
     try:
+        _get_supabase_client()
         _supabase_request(
             "POST",
             "profiles",
@@ -277,16 +311,21 @@ def persist_profile_state(
         )
 
     except Exception as e:
-        raise RuntimeError(f"Supabase persist error for {profile_id}: {e}") from e
+        if is_strict_db_mode():
+            raise RuntimeError(f"Supabase persist error for {profile_id}: {e}") from e
+        print(f"[WARN] Supabase persist skipped for {profile_id}: {e}")
 
 
 def load_profile_state(profile_id: str) -> Dict:
     """Load profile state from Supabase only (strict DB mode)."""
-    _get_supabase_client()
+    if profile_id in profile_state_cache:
+        return profile_state_cache[profile_id]
+
     if not is_uuid_like(profile_id):
         return {}
 
     try:
+        _get_supabase_client()
         profile_rows = _supabase_request(
             "GET",
             "profiles",
@@ -318,7 +357,7 @@ def load_profile_state(profile_id: str) -> Dict:
             fv = fv_rows[0]
             score = score_rows[0]
             pulse_score = int(score.get("pulse_score") or 300)
-            return {
+            loaded = {
                 "raw_features": fv.get("raw_features", {}),
                 "dimensions": {
                     "rhythm": float(fv.get("rhythm_score") or 0),
@@ -351,8 +390,13 @@ def load_profile_state(profile_id: str) -> Dict:
                     "lender_memo": score.get("lender_memo") or "",
                 },
             }
+            profile_state_cache[profile_id] = loaded
+            return loaded
     except Exception as e:
-        raise RuntimeError(f"Supabase read error for {profile_id}: {e}") from e
+        if is_strict_db_mode():
+            raise RuntimeError(f"Supabase read error for {profile_id}: {e}") from e
+        print(f"[WARN] Supabase read skipped for {profile_id}: {e}")
+        return profile_state_cache.get(profile_id, {})
 
     return {}
 
@@ -420,8 +464,13 @@ def load_models():
         else:
             print("[WARN] GEMINI_API_KEY not set - Gemini explanations will use defaults")
 
-        _get_supabase_client()
-        print("[OK] Supabase client initialized")
+        try:
+            _get_supabase_client()
+            print("[OK] Supabase client initialized")
+        except Exception as supabase_error:
+            if is_strict_db_mode():
+                raise
+            print(f"[WARN] Supabase unavailable in local mode: {supabase_error}")
 
     except Exception as e:
         print(f"Model loading error: {e}")
@@ -493,15 +542,18 @@ class ScoreResponse(BaseModel):
 
 
 @app.get("/health")
+@app.get("/api/health")
 def health_check():
     """Health check endpoint"""
     return {"status": "ok", "timestamp": datetime.now().isoformat()}
 
 
 @app.post("/api/parse", response_model=ParseResponse)
+@app.post("/api/p", response_model=ParseResponse)
 async def parse_statement(
     file: UploadFile = File(...),
     bank_format: str = "GENERIC",
+    pdf_password: str = "",
 ):
     """
     Parse UPI statement (PDF or CSV)
@@ -509,14 +561,15 @@ async def parse_statement(
     """
     try:
         suffix = Path(file.filename).suffix if file.filename else ""
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        UPLOAD_TMP_DIR.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix, dir=str(UPLOAD_TMP_DIR)) as tmp:
             tmp.write(await file.read())
             temp_path = tmp.name
 
         try:
             # Parse based on file type
             if (file.filename or "").lower().endswith(".pdf"):
-                profile_id, transactions = parser.parse_pdf(temp_path, bank_format)
+                profile_id, transactions = parser.parse_pdf(temp_path, bank_format, pdf_password)
             else:
                 profile_id, transactions = parser.parse_csv(temp_path, bank_format)
 
@@ -526,6 +579,12 @@ async def parse_statement(
                 "start": min(dates).strftime("%Y-%m-%d"),
                 "end": max(dates).strftime("%Y-%m-%d"),
             }
+
+            normalized_transactions = []
+            for txn in transactions:
+                normalized_txn = dict(txn)
+                normalized_txn["txn_date"] = pd.to_datetime(txn["txn_date"]).strftime("%Y-%m-%d")
+                normalized_transactions.append(normalized_txn)
         finally:
             if os.path.exists(temp_path):
                 os.remove(temp_path)
@@ -534,11 +593,23 @@ async def parse_statement(
             profile_id=profile_id,
             transaction_count=len(transactions),
             date_range=date_range,
-            transactions=transactions,
+            transactions=normalized_transactions,
         )
 
+    except OSError as e:
+        if getattr(e, "errno", None) == 28:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Insufficient disk space while processing upload. "
+                    f"Clear space on drive containing {UPLOAD_TMP_DIR} and retry."
+                ),
+            )
+        detail = str(e) or repr(e)
+        raise HTTPException(status_code=400, detail=detail)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        detail = str(e) or repr(e)
+        raise HTTPException(status_code=400, detail=detail)
 
 
 @app.post("/api/score", response_model=ScoreResponse)

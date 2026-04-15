@@ -3,7 +3,13 @@
 import axios from 'axios';
 import { DimensionScores, ScoreResult, Transaction } from './store';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const rawApiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+// Accept both forms for NEXT_PUBLIC_API_URL:
+// - http://localhost:8000
+// - http://localhost:8000/api
+const normalizedApiBase = rawApiBase.replace(/\/+$/, '').replace(/\/api$/, '');
+const API_BASE_URL = normalizedApiBase;
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -44,7 +50,8 @@ export const apiService = {
   // Parse statement (PDF/CSV upload)
   async parseStatement(
     file: File,
-    bankFormat: string = 'GENERIC'
+    bankFormat: string = 'HDFC',
+    pdfPassword: string = ''
   ): Promise<ParseResponse> {
     const formData = new FormData();
     formData.append('file', file);
@@ -53,7 +60,10 @@ export const apiService = {
       '/api/parse',
       formData,
       {
-        params: { bank_format: bankFormat },
+        params: {
+          bank_format: bankFormat,
+          ...(pdfPassword ? { pdf_password: pdfPassword } : {}),
+        },
         headers: {
           'Content-Type': 'multipart/form-data',
         },
