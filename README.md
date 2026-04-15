@@ -99,6 +99,63 @@ npm run dev
 
 Next.js runs on `http://localhost:3000`
 
+## 🎬 Full Demo Runbook (Submission Ready)
+
+This project now supports a full end-to-end demo flow with encrypted PDF upload and password:
+
+Upload → Parse (45 txns) → Score card → Radar → SHAP → Actions → Simulator → PDF report.
+
+### One copy-paste startup block (Windows PowerShell)
+
+Run backend in terminal 1:
+
+```powershell
+Set-Location h:\pulse-credit
+$p = Get-NetTCPConnection -LocalPort 8001 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess
+if ($p) { Stop-Process -Id $p -Force; Start-Sleep -Milliseconds 400 }
+Set-Location backend
+h:/pulse-credit/.venv-clean/Scripts/python.exe -m uvicorn main:app --host 127.0.0.1 --port 8001 --log-level info
+```
+
+Run frontend in terminal 2:
+
+```powershell
+Set-Location h:\pulse-credit\frontend
+npm run dev
+```
+
+### Golden demo path (every run)
+
+1. Open http://localhost:3000
+2. Enter PDF password in upload card
+3. Upload encrypted statement PDF
+4. Validate backend log contains parsed transaction count (expected sample: 45)
+5. Confirm dashboard sections render:
+  - Score card + confidence interval
+  - Behavioral radar chart
+  - SHAP impacts panel
+  - 3 action roadmap cards
+6. Open What-If Simulator and run one override scenario
+7. Open Lender Report and download PDF
+
+### AI insights mode badge
+
+Dashboard shows an explicit badge:
+- AI insights: Live (Gemini responses enabled)
+- AI insights: Fallback mode (default narratives/actions used)
+
+This prevents demo confusion if provider policy/rate limits disable Gemini during judging.
+
+### Submission screenshot artifacts (add these 3 files)
+
+Store screenshots in `docs/demo/`:
+
+1. `docs/demo/upload-success.png` (encrypted upload success state)
+2. `docs/demo/score-dashboard.png` (score card + radar + SHAP + actions)
+3. `docs/demo/simulator-or-report.png` (simulator result or report download)
+
+You can reference them in your final submission deck and README section.
+
 ## 📊 Features
 
 ### 6 Behavioral Dimensions (24 Features)

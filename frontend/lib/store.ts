@@ -33,6 +33,7 @@ export interface ScoreResult {
   confidence_interval: [number, number];
   band: 'poor' | 'fair' | 'good' | 'very_good' | 'excellent';
   archetype: string;
+  ai_insights_mode?: 'live' | 'fallback';
   dimensions: DimensionScores;
   shap_top3: ShapValue[];
   explanation: string;
@@ -153,6 +154,7 @@ export const usePulseCreditStore = create<PulseCreditStore>((set) => ({
         confidence_interval: confidence,
         band: (selected.band as ScoreResult['band']) || 'fair',
         archetype: selected.archetype,
+        ai_insights_mode: 'fallback',
         dimensions: selected.dimensions,
         shap_top3: normalizedShap,
         explanation: `Demo persona loaded: ${selected.name}.`,

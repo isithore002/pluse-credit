@@ -376,6 +376,7 @@ def load_profile_state(profile_id: str) -> Dict:
                         int(score.get("confidence_high") or 330),
                     ],
                     "band": get_score_band(pulse_score),
+                    "ai_insights_mode": "fallback",
                     "dimensions": {
                         "rhythm": int(float(fv.get("rhythm_score") or 0)),
                         "merchant": int(float(fv.get("merchant_score") or 0)),
@@ -531,6 +532,7 @@ class ScoreResponse(BaseModel):
     confidence_interval: List[int]
     band: str
     archetype: str
+    ai_insights_mode: str
     dimensions: DimensionScores
     shap_top3: List[Dict]
     explanation: str
@@ -681,6 +683,7 @@ async def compute_score(request: ScoreRequest):
         explanation = "Your credit profile shows consistent patterns."
         actions = []
         lender_memo = "Professional credit assessment available."
+        ai_insights_mode = "fallback"
 
         shap_values = result.get("shap_top3", [])
 
@@ -709,6 +712,7 @@ async def compute_score(request: ScoreRequest):
                     shap_values=shap_values,
                     dimensions=dim_scores,
                 )
+                ai_insights_mode = "live"
             except Exception as gemini_error:
                 print(f"Gemini error: {gemini_error}")
 
@@ -718,6 +722,7 @@ async def compute_score(request: ScoreRequest):
             "confidence_interval": [conf_low, conf_high],
             "band": result["band"],
             "archetype": archetype,
+            "ai_insights_mode": ai_insights_mode,
             "dimensions": {k: int(v) for k, v in dim_scores.items()},
             "shap_top3": shap_values,
             "explanation": explanation,
@@ -740,6 +745,7 @@ async def compute_score(request: ScoreRequest):
             confidence_interval=[conf_low, conf_high],
             band=result["band"],
             archetype=archetype,
+            ai_insights_mode=ai_insights_mode,
             dimensions=DimensionScores(**{k: int(v) for k, v in dim_scores.items()}),
             shap_top3=shap_values,
             explanation=explanation,
@@ -804,6 +810,7 @@ async def simulate_score(request: SimulateRequest):
             "confidence_interval": result["confidence_interval"],
             "band": result["band"],
             "archetype": archetype,
+            "ai_insights_mode": base_score_data.get("ai_insights_mode", "fallback"),
             "dimensions": {k: int(v) for k, v in sim_dimensions.items()},
             "shap_top3": result.get("shap_top3", []),
             "explanation": "This score reflects your overridden behavioral dimensions.",

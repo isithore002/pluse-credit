@@ -31,6 +31,7 @@ export default function Dashboard() {
   }
 
   const { score } = store;
+  const aiMode = score.ai_insights_mode === 'live' ? 'live' : 'fallback';
 
   return (
     <div className="space-y-8 py-8">
@@ -40,6 +41,16 @@ export default function Dashboard() {
         <p className="mt-2 text-slate-400">
           Based on {store.transactions.length} transactions • {score.archetype}
         </p>
+        <div className="mt-3 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide">
+          <span
+            className={`h-2 w-2 rounded-full ${
+              aiMode === 'live' ? 'bg-emerald-400' : 'bg-amber-400'
+            }`}
+          ></span>
+          <span className={aiMode === 'live' ? 'text-emerald-300' : 'text-amber-300'}>
+            AI insights: {aiMode === 'live' ? 'Live' : 'Fallback mode'}
+          </span>
+        </div>
       </section>
 
       {/* Main score display */}
