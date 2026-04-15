@@ -4,10 +4,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
 import { usePulseCreditStore } from '@/lib/store';
 import { apiService } from '@/lib/api';
+import UploadZone from '@/components/UploadZone';
 
 export default function Home() {
   const router = useRouter();
@@ -41,48 +41,41 @@ export default function Home() {
     loadPersonas();
   }, []);
 
-  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
-    noClick: true,
-    accept: {
-      'application/pdf': ['.pdf'],
-      'text/csv': ['.csv'],
-    },
-    onDrop: async (acceptedFiles) => {
-      if (acceptedFiles.length === 0) return;
+  const handleDrop = async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length === 0) return;
 
-      const file = acceptedFiles[0];
-      store.setUploading(true);
+    const file = acceptedFiles[0];
+    store.setUploading(true);
 
-      try {
-        const isPdf = file.name.toLowerCase().endsWith('.pdf');
-        const result = await apiService.parseStatement(file, 'HDFC', isPdf ? pdfPassword : '');
-        store.setProfileId(result.profile_id);
-        store.setTransactions(result.transactions);
+    try {
+      const isPdf = file.name.toLowerCase().endsWith('.pdf');
+      const result = await apiService.parseStatement(file, 'HDFC', isPdf ? pdfPassword : '');
+      store.setProfileId(result.profile_id);
+      store.setTransactions(result.transactions);
 
-        // Auto-compute score
-        store.setLoading(true);
-        const scoreResult = await apiService.computeScore(
-          result.profile_id,
-          result.transactions
-        );
-        store.setScore(scoreResult);
+      // Auto-compute score
+      store.setLoading(true);
+      const scoreResult = await apiService.computeScore(
+        result.profile_id,
+        result.transactions
+      );
+      store.setScore(scoreResult);
 
-        router.push('/dashboard');
-      } catch (error) {
-        let message = 'Unknown error';
-        if (axios.isAxiosError(error)) {
-          const detail = error.response?.data?.detail;
-          message = detail || error.message;
-        } else if (error instanceof Error) {
-          message = error.message;
-        }
-        store.setError(`Upload failed: ${message}`);
-      } finally {
-        store.setUploading(false);
-        store.setLoading(false);
+      router.push('/dashboard');
+    } catch (error) {
+      let message = 'Unknown error';
+      if (axios.isAxiosError(error)) {
+        const detail = error.response?.data?.detail;
+        message = detail || error.message;
+      } else if (error instanceof Error) {
+        message = error.message;
       }
-    },
-  });
+      store.setError(`Upload failed: ${message}`);
+    } finally {
+      store.setUploading(false);
+      store.setLoading(false);
+    }
+  };
 
   const handleDemoPersona = async (personaKey: 'ravi' | 'priya' | 'arjun') => {
     store.loadPersona(personaKey);
@@ -112,55 +105,12 @@ export default function Home() {
       <section className="card">
         <h3 className="mb-6 text-2xl font-bold text-white">Upload Your Statement</h3>
 
-        <div
-          {...getRootProps()}
-          className={`rounded-lg border-2 border-dashed px-8 py-16 text-center transition-all ${
-            isDragActive
-              ? 'border-purple-400 bg-purple-900/20'
-              : 'border-slate-600 bg-slate-900/30 hover:border-slate-500'
-          }`}
-        >
-          <input {...getInputProps()} />
-
-          {store.isUploading ? (
-            <div className="flex flex-col items-center">
-              <div className="h-12 w-12 animate-spin rounded-full border-4 border-slate-600 border-t-purple-500"></div>
-              <p className="mt-4 text-slate-300">Processing statement...</p>
-            </div>
-          ) : (
-            <>
-              <svg
-                className="mx-auto h-16 w-16 text-slate-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-              <p className="mt-4 text-lg text-slate-300">
-                {isDragActive ? 'Drop your statement here' : 'Drag and drop your UPI statement'}
-              </p>
-              <p className="mt-2 text-sm text-slate-400">PDF or CSV • HDFC, SBI, ICICI, Kotak supported</p>
-              <div className="mx-auto mt-4 max-w-sm">
-                <input
-                  type="password"
-                  value={pdfPassword}
-                  onChange={(e) => setPdfPassword(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => e.stopPropagation()}
-                  placeholder="PDF password (optional)"
-                  className="w-full rounded-md border border-slate-600 bg-slate-900/60 px-3 py-2 text-sm text-slate-200 placeholder-slate-400 focus:border-purple-500 focus:outline-none"
-                />
-              </div>
-              <button type="button" onClick={open} className="btn-primary mt-6">Select File</button>
-            </>
-          )}
-        </div>
+        <UploadZone
+          isUploading={store.isUploading}
+          pdfPassword={pdfPassword}
+          onPasswordChange={setPdfPassword}
+          onDrop={handleDrop}
+        />
 
         {store.error && (
           <div className="mt-4 rounded-lg border border-red-600 bg-red-900/20 p-4 text-red-200">

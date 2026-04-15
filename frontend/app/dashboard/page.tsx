@@ -127,6 +127,12 @@ export default function Dashboard() {
         </button>
         <button
           className="btn-secondary"
+          onClick={() => router.push('/graph')}
+        >
+          Social Graph
+        </button>
+        <button
+          className="btn-secondary"
           onClick={() => {
             store.reset();
             router.push('/');

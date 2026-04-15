@@ -114,6 +114,8 @@ class EnsembleScorer:
         Compute SHAP values for top 3 features
         SHAP explains which features contributed most to the score
         """
+        feature_names = self._get_feature_names()
+
         try:
             explainer = shap.TreeExplainer(self.xgb_model)
             shap_values = explainer.shap_values(raw_features.reshape(1, -1))
@@ -127,7 +129,6 @@ class EnsembleScorer:
             abs_shap = np.abs(shap_vals)
             top_3_indices = np.argsort(abs_shap)[-3:][::-1]
 
-            feature_names = self._get_feature_names()
             shap_list: List[Dict[str, float]] = []
 
             for idx in top_3_indices:
@@ -138,10 +139,43 @@ class EnsembleScorer:
                         "impact": float(shap_vals[idx]),
                     })
 
+            total_abs_impact = float(abs_shap.sum())
+            if total_abs_impact < 1e-6:
+                return self._fallback_attribution(raw_features, feature_names)
+
             return shap_list
 
         except Exception as e:
             print(f"SHAP computation error: {e}")
+            return self._fallback_attribution(raw_features, feature_names)
+
+    def _fallback_attribution(self, raw_features: np.ndarray, feature_names: List[str]) -> List[Dict[str, float]]:
+        """
+        Fallback attribution when SHAP is unavailable or numerically flat.
+        Uses distance from neutral feature value (0.5) as a proxy signal.
+        """
+        try:
+            neutral = 0.5
+            deltas = raw_features - neutral
+            strengths = np.abs(deltas)
+            top_3_indices = np.argsort(strengths)[-3:][::-1]
+
+            fallback: List[Dict[str, float]] = []
+            for idx in top_3_indices:
+                if idx >= len(feature_names):
+                    continue
+                # Scale proxy impact for better visual readability in UI.
+                proxy_impact = float(deltas[idx] * 10.0)
+                fallback.append(
+                    {
+                        "feature": feature_names[idx],
+                        "value": float(raw_features[idx]),
+                        "impact": proxy_impact,
+                    }
+                )
+
+            return fallback
+        except Exception:
             return []
 
     def _get_feature_names(self) -> List[str]:

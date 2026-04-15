@@ -156,6 +156,26 @@ Store screenshots in `docs/demo/`:
 
 You can reference them in your final submission deck and README section.
 
+### Current implementation status (Apr 16)
+
+Implemented:
+
+- App routes: `/`, `/dashboard`, `/simulate`, `/graph`, `/report`
+- Canonical UI components:
+  - `components/UploadZone.tsx`
+  - `components/WhatIfSimulator.tsx`
+  - `components/SocialGraph.tsx`
+  - `components/LenderReport.tsx`
+  - plus existing `ScoreRing`, `RadarChart`, `SHAPWaterfall`, `ActionRoadmap`
+- Encrypted PDF + password upload flow
+- AI status badge on dashboard (`AI insights: Live/Fallback mode`)
+- SHAP UI empty-state handling and model-side fallback attribution when SHAP is numerically flat
+
+Still to add manually:
+
+- Final screenshot files under `docs/demo/`
+- Optional: additional demo clip/gif for submission deck
+
 ## 📊 Features
 
 ### 6 Behavioral Dimensions (24 Features)

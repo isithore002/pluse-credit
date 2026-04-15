@@ -9,7 +9,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   Cell,
 } from 'recharts';
@@ -30,10 +29,45 @@ export default function SHAPWaterfall({ shap }: SHAPWaterfallProps) {
     value: Math.abs(item.impact),
     impact: item.impact,
     positive: item.impact > 0,
+    rawValue: item.value,
   }));
 
   // Sort by absolute impact descending
   data.sort((a, b) => Math.abs(b.impact) - Math.abs(a.impact));
+
+  const hasData = data.length > 0;
+  const hasVisibleImpact = data.some((item) => Math.abs(item.impact) > 1e-6);
+
+  if (!hasData) {
+    return (
+      <div className="rounded-lg border border-slate-700/70 bg-slate-900/30 p-5 text-slate-300">
+        No SHAP feature data is available for this score yet.
+      </div>
+    );
+  }
+
+  if (!hasVisibleImpact) {
+    return (
+      <div className="space-y-4">
+        <div className="rounded-lg border border-slate-700/70 bg-slate-900/30 p-5">
+          <p className="text-sm font-semibold uppercase tracking-wide text-amber-300">Flat Attribution</p>
+          <p className="mt-2 text-sm text-slate-300">
+            Top SHAP impacts are near zero for this profile, so no dominant feature is driving the score alone.
+          </p>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-3">
+          {data.map((item) => (
+            <div key={item.name} className="rounded-lg border border-slate-700/60 bg-slate-900/20 p-3">
+              <p className="truncate text-sm font-semibold text-slate-200">{item.name}</p>
+              <p className="mt-1 text-xs text-slate-400">Feature value: {Number(item.rawValue).toFixed(2)}</p>
+              <p className="mt-1 text-xs text-slate-500">SHAP impact: 0.00</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-80 w-full">

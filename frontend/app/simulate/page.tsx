@@ -4,15 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiService } from '@/lib/api';
 import { DimensionScores, usePulseCreditStore } from '@/lib/store';
-
-const DIMENSIONS: Array<{ key: keyof DimensionScores; label: string }> = [
-  { key: 'rhythm', label: 'Payment Rhythm' },
-  { key: 'merchant', label: 'Merchant Consistency' },
-  { key: 'social', label: 'Social Trust' },
-  { key: 'calendar', label: 'Calendar Alignment' },
-  { key: 'velocity', label: 'Velocity Stability' },
-  { key: 'nlp', label: 'NLP Intent' },
-];
+import WhatIfSimulator from '@/components/WhatIfSimulator';
 
 export default function SimulatePage() {
   const router = useRouter();
@@ -68,38 +60,15 @@ export default function SimulatePage() {
         <p className="mt-2 text-slate-400">Adjust behavioral dimensions and re-score instantly.</p>
       </section>
 
-      <section className="card">
-        <div className="grid gap-6">
-          {DIMENSIONS.map((dim) => (
-            <div key={dim.key}>
-              <div className="mb-2 flex items-center justify-between">
-                <label className="text-sm font-semibold text-slate-200">{dim.label}</label>
-                <span className="text-sm text-slate-300">{effectiveDimensions[dim.key]}</span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={effectiveDimensions[dim.key]}
-                onChange={(e) => handleSlider(dim.key, Number(e.target.value))}
-                className="w-full"
-              />
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-6 flex gap-3">
-          <button className="btn-primary" onClick={runSimulation} disabled={isSubmitting}>
-            {isSubmitting ? 'Running...' : 'Run Simulation'}
-          </button>
-          <button className="btn-secondary" onClick={() => store.resetSimulator()}>
-            Reset
-          </button>
-          <button className="btn-secondary" onClick={() => router.push('/dashboard')}>
-            Back To Dashboard
-          </button>
-        </div>
-      </section>
+      <WhatIfSimulator
+        dimensions={baseScore.dimensions}
+        overrides={store.simulatorOverrides}
+        onChange={handleSlider}
+        onRun={runSimulation}
+        onReset={() => store.resetSimulator()}
+        onBack={() => router.push('/dashboard')}
+        isSubmitting={isSubmitting}
+      />
 
       {store.simulatedScore && (
         <section className="card border border-emerald-700/60 bg-emerald-900/10">

@@ -4,6 +4,7 @@ import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiService } from '@/lib/api';
 import { usePulseCreditStore } from '@/lib/store';
+import LenderReport from '@/components/LenderReport';
 
 function ReportPageContent() {
   const router = useRouter();
@@ -48,20 +49,13 @@ function ReportPageContent() {
         <p className="mt-2 text-slate-400">Generate and download a PDF memo for underwriting.</p>
       </section>
 
-      <section className="card">
-        <p className="text-slate-300">Profile: {profileId || 'Not available'}</p>
-
-        <div className="mt-6 flex gap-3">
-          <button className="btn-primary" onClick={downloadReport} disabled={isDownloading}>
-            {isDownloading ? 'Generating PDF...' : 'Download PDF'}
-          </button>
-          <button className="btn-secondary" onClick={() => router.push('/dashboard')}>
-            Back To Dashboard
-          </button>
-        </div>
-
-        {error && <div className="mt-4 rounded border border-red-700 bg-red-900/20 p-3 text-red-200">{error}</div>}
-      </section>
+      <LenderReport
+        profileId={profileId}
+        isDownloading={isDownloading}
+        error={error}
+        onDownload={downloadReport}
+        onBack={() => router.push('/dashboard')}
+      />
     </div>
   );
 }
