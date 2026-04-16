@@ -1,7 +1,21 @@
 // frontend/app/layout.tsx
 
 import type { Metadata } from 'next';
+import { Manrope, Space_Grotesk } from 'next/font/google';
+import AppShell from '@/components/AppShell';
 import './globals.css';
+
+const manrope = Manrope({
+  subsets: ['latin'],
+  variable: '--font-manrope',
+  display: 'swap',
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-space-grotesk',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'PulseCredit - Behavioral Credit Scoring',
@@ -16,24 +30,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-          <header className="border-b border-slate-700 bg-slate-800/50 backdrop-blur-sm">
-            <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500"></div>
-                  <h1 className="text-2xl font-bold text-white">PulseCredit</h1>
-                </div>
-                <p className="text-sm text-slate-400">
-                  Behavioral credit scoring for the 350M invisible
-                </p>
-              </div>
-            </div>
-          </header>
-          <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-            {children}
-          </main>
+      <body className={`${manrope.variable} ${spaceGrotesk.variable}`}>
+        <div className="mesh-bg min-h-screen overflow-hidden">
+          <div className="pointer-events-none absolute left-[-220px] top-[-220px] h-[460px] w-[460px] rounded-full bg-cyan-300/10 blur-3xl"></div>
+          <div className="pointer-events-none absolute right-[-190px] top-[35%] h-[420px] w-[420px] rounded-full bg-sky-300/10 blur-3xl"></div>
+          <AppShell>{children}</AppShell>
         </div>
       </body>
     </html>

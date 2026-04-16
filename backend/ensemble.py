@@ -139,9 +139,19 @@ class EnsembleScorer:
                         "impact": float(shap_vals[idx]),
                     })
 
-            total_abs_impact = float(abs_shap.sum())
-            if total_abs_impact < 1e-6:
+            # Convert SHAP contribution to approximate score-point impact (300-850 scale span = 550).
+            score_point_impacts = shap_vals * 550.0
+
+            total_abs_impact = float(np.abs(score_point_impacts).sum())
+            max_abs_impact = float(np.abs(score_point_impacts).max()) if score_point_impacts.size else 0.0
+
+            # If impacts are numerically flat in score-point terms, use deterministic fallback attribution.
+            if total_abs_impact < 1.0 or max_abs_impact < 0.5:
                 return self._fallback_attribution(raw_features, feature_names)
+
+            for i, idx in enumerate(top_3_indices):
+                if i < len(shap_list):
+                    shap_list[i]["impact"] = float(score_point_impacts[idx])
 
             return shap_list
 
@@ -164,8 +174,8 @@ class EnsembleScorer:
             for idx in top_3_indices:
                 if idx >= len(feature_names):
                     continue
-                # Scale proxy impact for better visual readability in UI.
-                proxy_impact = float(deltas[idx] * 10.0)
+                # Map distance from neutral baseline (0.5) to score-point proxy impact.
+                proxy_impact = float(deltas[idx] * 30.0)
                 fallback.append(
                     {
                         "feature": feature_names[idx],

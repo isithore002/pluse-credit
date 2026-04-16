@@ -83,13 +83,16 @@ export default function Home() {
   };
 
   return (
-    <div className="space-y-12 py-12">
+    <div className="space-y-12 py-10 sm:py-12">
       {/* Hero section */}
-      <section className="text-center">
-        <h2 className="text-5xl font-bold text-white">
+      <section className="surface text-center">
+        <p className="mx-auto mb-4 inline-flex items-center rounded-full border border-cyan-200/20 bg-cyan-300/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">
+          Alt-Credit Intelligence Platform
+        </p>
+        <h2 className="text-4xl font-bold text-white sm:text-5xl">
           Your Credit Score, <span className="text-gradient">Reimagined</span>
         </h2>
-        <p className="mt-4 text-xl text-slate-300">
+        <p className="mx-auto mt-4 max-w-3xl text-lg text-slate-200 sm:text-xl">
           Behavioral credit scoring for India's 350M credit-invisible population
         </p>
       </section>
@@ -103,7 +106,7 @@ export default function Home() {
 
       {/* Upload Zone */}
       <section className="card">
-        <h3 className="mb-6 text-2xl font-bold text-white">Upload Your Statement</h3>
+        <h3 className="section-title mb-6">Upload Your Statement</h3>
 
         <UploadZone
           isUploading={store.isUploading}
@@ -121,7 +124,7 @@ export default function Home() {
 
       {/* Demo Personas */}
       <section className="card">
-        <h3 className="mb-6 text-2xl font-bold text-white">Try Demo Personas</h3>
+        <h3 className="section-title mb-6">Try Demo Personas</h3>
 
         <div className="grid gap-6 md:grid-cols-3">
           {[
@@ -150,12 +153,12 @@ export default function Home() {
             <button
               key={persona.key}
               onClick={() => handleDemoPersona(persona.key)}
-              className="rounded-lg border border-slate-600 bg-slate-800 p-6 text-left transition-all hover:border-purple-500 hover:bg-slate-800/80"
+              className="rounded-xl border border-slate-300/20 bg-slate-950/35 p-6 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-300/50 hover:bg-slate-900/60"
             >
               <div className="flex items-start justify-between">
                 <div>
                   <h4 className="text-xl font-bold text-white">{persona.name}</h4>
-                  <p className="text-sm text-purple-400">{persona.archetype}</p>
+                  <p className="text-sm text-cyan-300">{persona.archetype}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-bold text-gradient">{persona.score}</p>
@@ -172,7 +175,7 @@ export default function Home() {
       <section className="grid gap-6 md:grid-cols-2">
         <div className="card">
           <h4 className="flex items-center text-lg font-semibold text-white">
-            <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/20 text-purple-400">
+            <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/20 text-cyan-300">
               📊
             </span>
             6 Behavioral Dimensions
@@ -189,7 +192,7 @@ export default function Home() {
 
         <div className="card">
           <h4 className="flex items-center text-lg font-semibold text-white">
-            <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-pink-500/20 text-pink-400">
+            <span className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-amber-400/20 text-amber-200">
                 🤖
             </span>
             ML-Powered Scoring

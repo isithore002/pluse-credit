@@ -415,6 +415,173 @@ def get_score_band(score: int) -> str:
     return "poor"
 
 
+def _fallback_explanation(
+    pulse_score: int,
+    archetype: str,
+    weakest_dimension: str,
+    weakest_score: float,
+    transaction_count: int,
+) -> str:
+    """Generate a specific, non-generic explanation when live AI is unavailable."""
+    strengths = {
+        "student": "routine low-ticket UPI activity that builds repayment visibility",
+        "gig_worker": "high transaction activity showing active income movement",
+        "salaried": "stable month-on-month spending and predictable payment rhythm",
+    }
+    weakness_hint = {
+        "rhythm": "irregular payment cadence",
+        "merchant": "scattered merchant behavior",
+        "social": "limited reciprocal transfers",
+        "calendar": "weak fixed-date pattern",
+        "velocity": "volatile spend spikes",
+        "nlp": "unclear transaction intent labels",
+    }
+
+    strength_line = strengths.get(archetype, "consistent UPI behavior")
+    weak_line = weakness_hint.get(weakest_dimension, weakest_dimension)
+
+    return (
+        f"PulseCredit used {transaction_count} UPI transactions to score you at {pulse_score}/850, and your profile shows {strength_line}. "
+        f"Your weakest area is {weakest_dimension} ({weakest_score:.0f}/100) due to {weak_line}, which matters because lenders look for predictable cash-flow behavior before approving first-time borrowers."
+    )
+
+
+def _fallback_actions(dimensions: Dict[str, float], archetype: str) -> List[Dict]:
+    """Generate 3 practical, benefit-led actions when live AI is unavailable."""
+    weakest = min(dimensions.items(), key=lambda x: x[1])[0] if dimensions else "rhythm"
+
+    action_map = {
+        "rhythm": [
+            {
+                "action": "For the next 30 days, make at least one UPI transaction every 3 days so your repayment rhythm appears reliable to lenders.",
+                "delta": 18,
+                "priority": 1,
+            },
+            {
+                "action": "For the next 2 billing cycles, keep monthly debit spend within +/-20% of last month to show stable budgeting behavior.",
+                "delta": 14,
+                "priority": 2,
+            },
+            {
+                "action": "Within 21 days, add 3 recurring utility or education payments via UPI to strengthen transaction consistency signals.",
+                "delta": 11,
+                "priority": 3,
+            },
+        ],
+        "velocity": [
+            {
+                "action": "For the next 45 days, avoid single debit spikes above your weekly average by splitting large payments across planned dates.",
+                "delta": 19,
+                "priority": 1,
+            },
+            {
+                "action": "Set a fixed weekly UPI budget and stay within it for 6 weeks to reduce volatility in cash-flow signals.",
+                "delta": 13,
+                "priority": 2,
+            },
+            {
+                "action": "Move discretionary purchases to a single day each week for 1 month to create a cleaner spend pattern for underwriting models.",
+                "delta": 10,
+                "priority": 3,
+            },
+        ],
+        "social": [
+            {
+                "action": "In the next 30 days, maintain at least 3 reciprocal UPI exchanges with trusted contacts to improve social trust signals.",
+                "delta": 16,
+                "priority": 1,
+            },
+            {
+                "action": "Ask regular payers to keep transfer timings consistent over 6 weeks so inflow reliability becomes visible.",
+                "delta": 12,
+                "priority": 2,
+            },
+            {
+                "action": "Tag peer transfers clearly (rent split, food, travel) for 1 month to improve intent and relationship quality in your graph.",
+                "delta": 9,
+                "priority": 3,
+            },
+        ],
+    }
+
+    generic = [
+        {
+            "action": "For 30 days, maintain regular UPI activity every week to build an auditable credit behavior trail.",
+            "delta": 15,
+            "priority": 1,
+        },
+        {
+            "action": "For 2 months, keep spend variability low and avoid sudden outlier transactions to improve score stability.",
+            "delta": 12,
+            "priority": 2,
+        },
+        {
+            "action": "Improve transaction remarks and category consistency over 4 weeks so lenders can interpret your cash-flow intent faster.",
+            "delta": 9,
+            "priority": 3,
+        },
+    ]
+
+    # Personalize one action by archetype context.
+    selected = action_map.get(weakest, generic)
+    if archetype == "student":
+        selected[2]["action"] = "For the next semester month, pay canteen/rent/fees on predictable dates so lenders can see disciplined student cash-flow patterns."
+    elif archetype == "gig_worker":
+        selected[1]["action"] = "For the next 6 weeks, route fuel and work-expense payments through consistent intervals to reduce gig-income volatility risk."
+
+    return selected
+
+
+def _fallback_lender_memo(
+    pulse_score: int,
+    band: str,
+    confidence_low: int,
+    confidence_high: int,
+    archetype: str,
+    dimensions: Dict[str, float],
+) -> str:
+    """Generate a structured lender memo with clear real-world context."""
+    weakest_dim = min(dimensions.items(), key=lambda x: x[1])[0] if dimensions else "velocity"
+    recommendation = "Approve with monitoring"
+    if pulse_score >= 750:
+        recommendation = "Approve up to ₹100000"
+    elif pulse_score >= 700:
+        recommendation = "Approve up to ₹50000"
+    elif pulse_score < 600:
+        recommendation = "Decline — reassess in 90 days"
+
+    return (
+        f"Profile Summary: {archetype} borrower scored {pulse_score}/850 ({band}) with confidence range {confidence_low}-{confidence_high}. "
+        f"PulseCredit is designed for credit-invisible users and evaluates UPI behavior where bureau history is missing. "
+        "Positive Signals: The profile shows repeat digital payment behavior and usable transaction intent patterns, supporting early-stage credit visibility. "
+        f"Risk Indicators: The weakest dimension is {weakest_dim}, indicating limited consistency in one key behavioral axis and moderate repayment uncertainty. "
+        f"Recommendation: {recommendation}."
+    )
+
+
+def _sanitize_actions(actions: List[Dict], dimensions: Dict[str, float], archetype: str) -> List[Dict]:
+    """Guarantee 3 clean roadmap actions with deltas and priorities."""
+    cleaned = []
+    for idx, item in enumerate(actions or []):
+        if not isinstance(item, dict):
+            continue
+        action_text = str(item.get("action", "")).strip()
+        if not action_text:
+            continue
+        delta = int(item.get("delta", 0) or 0)
+        priority = int(item.get("priority", idx + 1) or (idx + 1))
+        cleaned.append({
+            "action": action_text,
+            "delta": max(1, min(30, delta if delta else 10)),
+            "priority": max(1, min(3, priority)),
+        })
+
+    cleaned = sorted(cleaned, key=lambda x: x["priority"])[:3]
+    if len(cleaned) < 3:
+        return _fallback_actions(dimensions, archetype)
+    return cleaned
+
+
 @app.on_event("startup")
 def load_models():
     """Load trained models on startup"""
@@ -680,9 +847,22 @@ async def compute_score(request: ScoreRequest):
         weakest_dim_name = min(dim_scores.items(), key=lambda x: x[1])
 
         # Generate Gemini explanations (if available)
-        explanation = "Your credit profile shows consistent patterns."
-        actions = []
-        lender_memo = "Professional credit assessment available."
+        explanation = _fallback_explanation(
+            pulse_score=pulse_score,
+            archetype=archetype,
+            weakest_dimension=weakest_dim_name[0],
+            weakest_score=weakest_dim_name[1],
+            transaction_count=len(request.transactions),
+        )
+        actions = _fallback_actions(dim_scores, archetype)
+        lender_memo = _fallback_lender_memo(
+            pulse_score=pulse_score,
+            band=result["band"],
+            confidence_low=conf_low,
+            confidence_high=conf_high,
+            archetype=archetype,
+            dimensions=dim_scores,
+        )
         ai_insights_mode = "fallback"
 
         shap_values = result.get("shap_top3", [])
@@ -702,6 +882,7 @@ async def compute_score(request: ScoreRequest):
                     archetype=archetype,
                     dimensions_sorted=dim_scores,
                 )
+                actions = _sanitize_actions(actions, dim_scores, archetype)
 
                 lender_memo = gemini_client.generate_lender_memo(
                     pulse_score=pulse_score,
@@ -712,6 +893,15 @@ async def compute_score(request: ScoreRequest):
                     shap_values=shap_values,
                     dimensions=dim_scores,
                 )
+                if not isinstance(lender_memo, str) or len(lender_memo.strip()) < 50:
+                    lender_memo = _fallback_lender_memo(
+                        pulse_score=pulse_score,
+                        band=result["band"],
+                        confidence_low=conf_low,
+                        confidence_high=conf_high,
+                        archetype=archetype,
+                        dimensions=dim_scores,
+                    )
                 ai_insights_mode = "live"
             except Exception as gemini_error:
                 print(f"Gemini error: {gemini_error}")
